@@ -904,11 +904,16 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--port", type=int, default=8080)
+    # خلي الـ Default بتاع الـ Host يبقى 0.0.0.0 عشان يشتغل على السيرفرات
+    ap.add_argument("--host", default="0.0.0.0") 
+    
+    # خلي الـ Default بتاع البورت يقرأ من متغير البيئة PORT بتاع Render، ولو مش موجود يستخدم 8080
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
+    
     a = ap.parse_args()
     init_db()
     if licensing.PUBLIC_KEY and vendor_seed() is None:
         print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
+    
     print(f"Check Printing running at http://{a.host}:{a.port}  (Ctrl+C to stop)")
     ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
