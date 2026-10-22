@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10253d">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2310253d'/%3E%3Crect x='10' y='20' width='44' height='26' rx='4' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M17 29h18M17 36h11' stroke='%237ee0c8' stroke-width='3.5' stroke-linecap='round'/%3E%3Cpath d='M38 40h9' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>Check Printing</title>
+<style>
+:root{--bg:#edf1ea;--card:#fbfcf9;--ink:#15223a;--mut:#5b6779;--line:#c9d3c6;--acc:#0e6f5c;--on:#fff;--warn:#b4531a;--desk:#d9e1d5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1720;--card:#17222e;--ink:#e6edf3;--mut:#93a1b3;--line:#2b3a49;--acc:#3dc2a4;--on:#06241d;--warn:#f0905a;--desk:#1d2a37}}
+:root[data-theme="dark"]{--bg:#0f1720;--card:#17222e;--ink:#e6edf3;--mut:#93a1b3;--line:#2b3a49;--acc:#3dc2a4;--on:#06241d;--warn:#f0905a;--desk:#1d2a37}
+*{box-sizing:inherit}html{scroll-padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Tahoma,sans-serif}
+main{max-width:1500px;margin:0;padding:20px 24px}
+.cols{display:grid;grid-template-columns:minmax(340px,420px) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1100px){.cols{grid-template-columns:minmax(0,1fr)}}
+.stack{display:grid;gap:16px;min-width:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+h2{font-size:17px;margin:0 0 12px}h3{font-size:14px;margin:16px 0 8px;color:var(--mut);font-weight:600}
+label{display:grid;gap:4px;font-size:13px;color:var(--mut);margin-bottom:10px}
+input,select,textarea,button{font:inherit}
+input:not([type=checkbox]),select,textarea{width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+textarea{height:110px;padding:8px 10px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.stage:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.seg button{flex:1;border:0;background:none;padding:8px 6px;color:var(--mut);cursor:pointer}
+.seg button.on{background:var(--acc);color:var(--on);font-weight:600}
+.chk-row{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px;color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.btn.bad{color:var(--warn)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.per{display:grid;grid-template-columns:auto 1fr 64px 96px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.per input:not([type=checkbox]){height:32px}
+.desk{background:var(--desk);border-radius:8px;padding:14px;overflow:auto}
+.note{font-size:13px;color:var(--mut);margin:8px 0 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:start;color:var(--mut);font-weight:600;font-size:13px}th,td{padding:7px 8px;border-bottom:1px solid var(--line)}
+td.n{text-align:end;font-variant-numeric:tabular-nums}tr.q{cursor:pointer}tr.q.on td{background:color-mix(in srgb,var(--acc) 14%,transparent)}.bad-t{color:var(--warn)}
+.scroll{max-height:300px;overflow:auto}
+/* check paper */
+.pg{position:relative;overflow:hidden;transform-origin:0 0}
+.chk{position:absolute;color:#000}
+.paper .chk{background:#f4f7ef repeating-radial-gradient(circle at 15% 130%,rgba(14,111,92,.1) 0 1px,transparent 1px 7px);box-shadow:0 0 0 1px #9fb3a4,0 6px 18px rgba(0,0,0,.18)}
+.fld{position:absolute;white-space:nowrap;overflow:hidden;line-height:1.25;height:1.25em}
+.fld svg{width:100%;display:block}
+.stage .fld{cursor:move;outline:1px dashed rgba(14,111,92,.55);touch-action:none;overflow:hidden}
+.stage .fld.sel{outline:2px solid #0e6f5c;background:rgba(14,111,92,.14)}
+.rs{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize;background:rgba(14,111,92,.5)}
+.dlist{display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.dlist li{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px}
+.dlist button{border:0;background:none;color:var(--mut);cursor:pointer;font-size:16px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.on{opacity:1}
+#pr{position:absolute;left:-99999px;top:0}
+@media print{html,body{background:none!important;padding:0}#app{display:none!important}#pr{position:static}.pg{break-after:page}.pg:last-child{break-after:auto}}
+.ov{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:20px}
+@media print{#login{display:none!important}}
+#app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
+.nav{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:#10253d;color:#c5d3e4;padding:18px 12px}
+.brand{display:flex;gap:12px;align-items:center;padding:4px 8px 14px;color:#fff}
+.brand b{display:block;font-size:16px;line-height:1.2}.brand span{font-size:12px;color:#8fa4bd}
+.lg{width:40px;height:40px;border-radius:10px;background:#0e8f78;display:grid;place-items:center;flex:none}
+#tabs{flex:1;overflow:auto}
+.grp{margin:16px 10px 6px;font-size:12px;color:#8196ae}
+#tabs button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:inherit;font:inherit;padding:10px 12px;border-radius:9px;cursor:pointer;text-align:start;position:relative}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#tabs button:hover{background:rgba(255,255,255,.07)}
+#tabs button.on{background:rgba(61,194,164,.16);color:#fff;font-weight:600}
+#tabs button.on::before{content:"";position:absolute;inset-inline-start:-12px;top:8px;bottom:8px;width:4px;border-start-end-radius:4px;border-end-end-radius:4px;background:#3dc2a4}
+.who{display:flex;align-items:center;gap:10px;padding:12px 8px 2px;border-top:1px solid rgba(255,255,255,.1)}
+.av{width:36px;height:36px;border-radius:50%;background:#3dc2a4;color:#06241d;display:grid;place-items:center;font-weight:700;flex:none}
+.wn{flex:1;min-width:0;line-height:1.25}.wn b{display:block;color:#fff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wn span{font-size:12px;color:#8fa4bd}
+.who button{border:0;background:rgba(255,255,255,.08);color:#c5d3e4;width:34px;height:34px;border-radius:8px;cursor:pointer;display:grid;place-items:center;flex:none}.who button:hover{background:rgba(255,255,255,.18)}
+main{min-width:0}
+@media(max-width:880px){#app{grid-template-columns:minmax(0,1fr)}.nav{top:env(safe-area-inset-top,0px);height:auto;z-index:5;flex-direction:row;align-items:center;padding:6px 10px;gap:8px}.brand,.grp,.wn{display:none}#tabs{display:flex;gap:4px;overflow-x:auto}#tabs button{width:auto;padding:8px 10px}#tabs button span{display:none}#tabs button.on::before{display:none}.who{border:0;padding:0}}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}.row h2{margin:0}
+.pill{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}th.n{text-align:end}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:20px;max-width:min(430px,92vw)}dialog::backdrop{background:rgba(10,20,35,.55)}dialog h2{margin-top:0}
+.pg,.desk,#pr{direction:ltr}
+.lng{display:flex;gap:4px;margin:0 4px 10px}.lng button{flex:1;border:1px solid rgba(255,255,255,.18);background:none;color:#c5d3e4;border-radius:7px;padding:5px;cursor:pointer;font:inherit;font-size:13px}.lng button.on{background:rgba(255,255,255,.14);color:#fff}
+#login .lng button{border-color:var(--line);color:var(--ink)}#login .lng button.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.banner{margin-bottom:16px;padding:10px 14px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--card));font-size:14px}
+.banner.bad{border-width:2px;font-weight:600;background:color-mix(in srgb,var(--warn) 24%,var(--card))}.banner a{color:inherit;font-weight:600;cursor:pointer;text-decoration:underline}
+@media(max-width:880px){.nav .lng{display:none}}
+.tst .fld{outline:.2mm dashed #000}
+.calpt{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#d40000;border:2px solid #fff;pointer-events:none;box-shadow:0 0 0 1px #000}
+.paper .chk{color:var(--pc,#d40000)}   /* on-screen text colour only; printed pages stay black */
+#dstubseg{flex:0 0 auto}#dstubseg button{white-space:nowrap;padding:8px 14px}
+</style></head><body>
+<div id="app">
+<aside class="nav">
+ <div class="brand"><div class="lg"><svg viewBox="0 0 30 20" style="width:24px;height:16px"><rect x=".75" y=".75" width="28.5" height="18.5" rx="3" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M5 7h12M5 11h8" stroke="#7ee0c8" stroke-width="2"/><path d="M19 15h6" stroke="#fff" stroke-width="1.6"/></svg></div><div><b id="cn">Check Printing</b><span>Bank checks, done right</span></div></div>
+ <nav id="tabs">
+  <p class="grp">Work</p>
+  <button data-t="print" class="on" title="Print checks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg><span>Print checks</span></button>
+  <button data-t="history" title="Print history"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Print history</span></button>
+  <p class="grp">Setup</p>
+  <button data-t="design" title="Check designer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span>Check designer</span></button>
+  <button data-t="people" title="People"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.3c2 .7 3.5 2.4 3.5 5.7"/></svg><span>People</span></button>
+  <p class="grp">Administration</p>
+  <button data-t="users" title="Users and rights"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Users and rights</span></button>
+ </nav>
+ <div class="lng"><button data-l="en">English</button><button data-l="ar">العربية</button></div>
+ <div class="who"><div class="av" id="av"></div><div class="wn"><b id="me"></b><span>Signed in</span></div>
+  <button id="out" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></div>
+</aside>
+<main>
+<div class="banner" id="lic" hidden></div>
+<section class="tab" id="print"><div class="cols">
+ <div class="panel">
+  <h2>New print job</h2>
+  <label>Bank<select id="bank"></select></label>
+  <div class="seg" id="modes"><button data-m="one" class="on">Single</button><button data-m="sch">Schedule</button><button data-m="list">From list</button></div>
+  <div id="sh">
+   <label>Pay to<input id="person" list="dl" dir="auto" autocomplete="off"></label><datalist id="dl"></datalist>
+   <div class="g2"><label>Check date<input id="date" type="date"></label>
+   <label id="amt">Amount<input id="amount" type="number" min="0" step="0.01" inputmode="decimal"></label></div>
+  </div>
+  <div id="schb" hidden><h3>Checks to create (first one starts on the check date)</h3><div id="pers"></div></div>
+  <div id="listb" hidden><label>Paste rows: name, date, amount<textarea id="list" dir="auto" placeholder="Ahmed Ali&#9;15/01/2027&#9;2500.50&#10;Mona Said&#9;15/02/2027&#9;1800"></textarea></label><p class="note">Copy the three columns straight from Excel, or use commas or semicolons.</p></div>
+  <h3>Printing</h3>
+  <div class="g2"><label>Currency<select id="cur"></select></label><label>Font<select id="font"></select></label></div>
+  <div class="g2"><label>Font size (pt)<select id="size"></select></label><label>Smallest text size (pt)<select id="minsize"></select></label></div>
+  <p class="note" style="margin:-4px 0 8px">Text that is too long for its field shrinks to the smallest size, then continues on a second line.</p>
+  <div class="chk-row"><input type="checkbox" id="ar"><label for="ar" style="margin:0;color:inherit">Write amount in Arabic words</label></div>
+  <div class="chk-row"><input type="checkbox" id="rot"><label for="rot" style="margin:0;color:inherit">Feed check sideways (rotated)</label></div>
+  <div class="chk-row"><input type="checkbox" id="stub"><label for="stub" style="margin:0;color:inherit">Print the stub</label></div>
+  <div class="chk-row"><input type="checkbox" id="cross"><label for="cross" style="margin:0;color:inherit">Add crossing lines</label></div>
+  <div class="chk-row"><input type="checkbox" id="first"><label for="first" style="margin:0;color:inherit">Add “first beneficiary only”</label></div>
+  <div class="bar"><button class="btn pri" id="go">Print checks</button><button class="btn" id="copy">Copy list for Excel</button></div>
+ </div>
+ <div class="stack">
+  <div class="panel"><h2>Preview</h2><div class="desk" id="pvw"><div id="pv"></div></div>
+   <div class="chk-row"><input type="checkbox" id="bg"><label for="bg" style="margin:0;color:inherit">Show the bank’s check image (never printed)</label></div>
+   <div class="chk-row"><label for="pcolor" style="margin:0;color:inherit">Preview text color (never printed)</label><input type="color" id="pcolor" style="width:40px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:none"></div></div>
+  <div class="panel"><h2 id="qt">Checks</h2><div class="scroll"><table><thead><tr><th>#</th><th>Pay to</th><th>Date</th><th class="n">Amount</th></tr></thead><tbody id="qb"></tbody></table></div></div>
+ </div>
+</div></section>
+
+<section class="tab" id="design" hidden><div class="cols">
+ <div class="panel">
+  <h2>Bank check layout</h2>
+  <label>Bank<select id="dbank"></select></label>
+  <div class="bar" style="margin:0 0 14px"><button class="btn" id="bnew">New bank</button><button class="btn bad" id="bdel">Delete</button></div>
+  <div class="bar" style="margin:-4px 0 6px"><label class="btn" style="margin:0;display:inline-block">Import banks from Access<input id="imp" type="file" multiple accept=".csv,.txt,.tsv,.jpg,.jpeg,.png" hidden></label><button class="btn" id="ipaste">Paste bank table</button></div>
+  <p class="note" style="margin:0 0 14px">Select the exported CheckForms CSV together with the bank pictures named by bank code (1.jpg, 2.jpg …). Pictures alone refresh the size of existing banks.</p>
+  <label>Bank name<input id="bn" dir="auto"></label>
+  <div class="g2"><label>Check width (cm)<input id="bw" type="number" step="0.01" min="5"></label><label>Check height (cm)<input id="bh" type="number" step="0.01" min="3"></label>
+  <label>Shift right (cm)<input id="bl" type="number" step="0.05"></label><label>Shift down (cm)<input id="bt" type="number" step="0.05"></label></div>
+  <div class="chk-row"><input type="checkbox" id="plock"><label for="plock" style="margin:0;color:inherit">Keep picture proportions</label></div>
+  <p class="note">Shift moves everything on the printed page, to correct for how your printer feeds paper.</p>
+  <div class="bar" style="margin-top:8px"><label class="btn" style="margin:0;display:inline-block">Upload check image<input id="img" type="file" accept="image/*" hidden></label><button class="btn" id="isz">Use picture size</button><button class="btn" id="ical">Calibrate with a ruler</button><button class="btn" id="imgx">Remove image</button></div>
+  <p class="note" id="sz"></p>
+  <label style="margin-top:16px">Field<select id="fsel"></select></label>
+  <h3 id="fn" style="margin-top:0">Select a field on the check</h3>
+  <p class="note bad-t" id="fo" hidden>This field is outside the check, so it will not print. Move it with the numbers below.</p>
+  <div class="g2"><label>Left (cm)<input id="fx" type="number" step="0.05"></label><label>Top (cm)<input id="fy" type="number" step="0.05"></label>
+  <label>Width (cm)<input id="fw" type="number" step="0.05"></label><label>Align<select id="fa"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label></div>
+ </div>
+ <div class="panel"><div class="row"><h2>Drag fields into place</h2><div class="bar" style="margin:0"><span class="pill" id="dirty" hidden>Unsaved changes</span><button class="btn" id="undo" title="Undo (Ctrl+Z)">Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)">Redo</button><button class="btn" id="dis">Discard</button><button class="btn pri" id="sv" title="Ctrl+S">Save layout</button></div></div>
+  <div class="row" style="margin:0 0 10px"><div class="seg" id="dstubseg" style="margin:0"><button data-v="1">Show stub fields</button><button data-v="0">Hide stub fields</button></div><div class="chk-row" style="margin:0"><label for="dcolor" style="margin:0;color:inherit">Preview text color</label><input type="color" id="dcolor" style="width:40px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px;background:none"></div><button class="btn" id="tsheet">Print test sheet</button></div><div class="desk" id="dw"><div id="ds" class="stage" tabindex="0" aria-label="Check layout. Arrow keys move the selected field."></div></div>
+  <p class="note">Drag a field to move it, drag its green edge to change its width, or use the arrow keys (Shift for 1 cm). Nothing is stored until you press Save layout.</p>
+  <p class="note">Print test sheet prints the check outline with 1 cm marks and every field box. Measure it with a ruler, or lay it over a real check.</p></div>
+</div></section>
+
+<section class="tab" id="people" hidden><div class="panel" style="max-width:720px">
+ <h2>People you pay</h2>
+ <label>Add names, one per line<textarea id="pn" dir="auto"></textarea></label>
+ <div class="bar" style="margin:0 0 16px"><button class="btn pri" id="padd">Add names</button></div>
+ <ul class="dlist" id="pl"></ul><p class="note" id="pe"></p>
+</div></section>
+<section class="tab" id="history" hidden><div class="panel">
+ <div class="row"><h2>Print history</h2><div class="bar" style="margin:0"><input id="hq" type="search" placeholder="Search by name" dir="auto" style="width:220px"><button class="btn" id="hx">Export CSV</button></div></div>
+ <div class="scroll" style="max-height:none"><table><thead><tr><th>When</th><th>User</th><th>Bank</th><th>Pay to</th><th>Check date</th><th class="n">Amount</th><th></th></tr></thead><tbody id="hb"></tbody></table></div>
+ <div class="bar"><button class="btn" id="hm" hidden>Load more</button><span class="note" id="hn"></span></div>
+</div></section>
+
+<section class="tab" id="users" hidden><div class="cols">
+ <div class="panel"><h2>Users</h2><div class="bar" id="ul" style="margin:0 0 12px"></div><button class="btn" id="unew">New user</button></div>
+ <div class="panel"><h2 id="uh">User</h2>
+  <div class="g2"><label>User name<input id="un" autocomplete="off"></label><label>Password<input id="up" type="password" autocomplete="new-password" placeholder="Leave empty to keep"></label></div>
+  <h3>What this user can do</h3>
+  <table><thead><tr><th>Screen</th><th>Open</th><th>Add / edit</th><th>Delete</th></tr></thead><tbody id="ur"></tbody></table>
+  <div class="bar"><button class="btn pri" id="usave">Save user</button><button class="btn bad" id="udel">Delete user</button></div>
+ </div>
+ <div class="panel" style="grid-column:1/-1"><h2>Company and backup</h2>
+  <div class="g2" style="max-width:640px"><label>Company name (shown on the sign-in page and menu)<input id="co" maxlength="60" dir="auto"></label></div>
+  <div class="bar" style="margin-top:0"><button class="btn" id="cosave">Save name</button><button class="btn pri" id="bk">Download backup</button></div>
+  <p class="note">The backup is a zip with your company’s data (banks, people, users, print history) and every check image. Keep copies somewhere safe.</p></div>
+ <div class="panel" style="grid-column:1/-1"><h2>License</h2>
+  <table id="li" style="max-width:640px;margin-bottom:12px"></table>
+  <label style="max-width:640px">Paste a new license key<textarea id="lk" dir="ltr" spellcheck="false" style="font-family:ui-monospace,Consolas,monospace;font-size:12px"></textarea></label>
+  <div class="bar" style="margin-top:0"><button class="btn pri" id="lkgo">Activate</button></div></div>
+</div></section>
+</main></div>
+<div class="ov" id="login" hidden><form class="panel" id="lf" style="width:min(380px,100%)"><h2 id="lh">Sign in</h2>
+ <label id="lcl" hidden>Company code<input id="lt" autocomplete="organization" autocapitalize="off" dir="ltr"></label>
+ <label>User name<input id="ln" autocomplete="username" required></label>
+ <label>Password<input id="lp" type="password" autocomplete="current-password" required></label>
+ <p class="note bad-t" id="le" role="alert"></p><button class="btn pri" style="width:100%">Sign in</button>
+ <div class="lng" style="margin:14px 0 0"><button type="button" data-l="en">English</button><button type="button" data-l="ar">العربية</button></div></form></div>
+<dialog id="pdlg"><form method="dialog"><h2>Paste bank table</h2><p class="note">Copy the CheckForms rows from Access or Excel, including the header row, and paste them here.</p>
+ <textarea id="ptx" dir="ltr" spellcheck="false" style="width:min(640px,80vw);height:200px;font-family:ui-monospace,Consolas,monospace;font-size:12px"></textarea>
+ <div class="bar"><button class="btn pri" value="go">Import</button><button class="btn" value="cancel">Cancel</button></div></form></dialog>
+<dialog id="dlg"><form method="dialog"><h2>Unsaved changes</h2><p>Do you want to save your changes to this check layout?</p>
+ <div class="bar"><button class="btn pri" value="save">Save</button><button class="btn" value="discard">Discard</button><button class="btn" value="stay">Keep editing</button></div></form></dialog>
+<div id="pr"></div><div id="toast" role="status"></div><style id="pgs"></style>
+<script type="module">
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const h=(t,a={},...k)=>{const e=document.createElement(t);for(const n in a)e.setAttribute(n,a[n]);e.append(...k);return e};
+const PX=37.795,KEY='checkprint.v1',r2=v=>Math.round(v*20)/20;
+/* ---------- Language (English / Arabic, right-to-left) ---------- */
+const AR={
+'Check Printing':'طباعة الشيكات','Bank checks, done right':'طباعة الشيكات البنكية بدقة واحترافية','Work':'العمل','Print checks':'طباعة الشيكات','Print history':'سجل الطباعة',
+'Setup':'الإعداد','Check designer':'مصمم الشيك','People':'المستفيدون','Administration':'الإدارة','Users and rights':'المستخدمون والصلاحيات','Signed in':'مسجّل الدخول','Sign out':'تسجيل الخروج',
+'New print job':'مهمة طباعة جديدة','Bank':'البنك','Single':'شيك واحد','Schedule':'جدولة','From list':'من قائمة','Pay to':'الدفع لأمر','Check date':'تاريخ الشيك','Date':'التاريخ','Amount':'المبلغ',
+'Checks to create (first one starts on the check date)':'الشيكات المطلوب إنشاؤها (الأول يبدأ في تاريخ الشيك)','Paste rows: name, date, amount':'ألصق الصفوف: الاسم، التاريخ، المبلغ',
+'Copy the three columns straight from Excel, or use commas or semicolons.':'انسخ الأعمدة الثلاثة مباشرة من إكسل، أو استخدم الفاصلة أو الفاصلة المنقوطة.',
+'Printing':'الطباعة','Currency':'العملة','Font':'الخط','Font size (pt)':'حجم الخط (نقطة)','Write amount in Arabic words':'كتابة المبلغ بالحروف العربية','Feed check sideways (rotated)':'تغذية الشيك بشكل عرضي (مدوّر)',
+'Print the stub':'طباعة الكعب','Add crossing lines':'إضافة خطي التسطير','Add “first beneficiary only”':'إضافة «للمستفيد الأول فقط»','Copy list for Excel':'نسخ القائمة إلى إكسل','Preview':'معاينة',
+'Show the bank’s check image (never printed)':'إظهار صورة شيك البنك (لا تُطبع أبدًا)','#':'#','Checks':'الشيكات',
+'Bank check layout':'تخطيط شيك البنك','New bank':'بنك جديد','Delete':'حذف','Bank name':'اسم البنك','Check width (cm)':'عرض الشيك (سم)','Check height (cm)':'ارتفاع الشيك (سم)','Shift right (cm)':'إزاحة لليمين (سم)','Shift down (cm)':'إزاحة للأسفل (سم)',
+'Shift moves everything on the printed page, to correct for how your printer feeds paper.':'الإزاحة تحرّك كل ما في الصفحة المطبوعة لتعويض طريقة تغذية الطابعة للورق.',
+'Upload check image':'رفع صورة الشيك','Remove image':'حذف الصورة','Select a field on the check':'اختر حقلًا على الشيك','Left (cm)':'من اليسار (سم)','Top (cm)':'من الأعلى (سم)','Width (cm)':'العرض (سم)','Align':'المحاذاة',
+'Left':'يسار','Center':'وسط','Right':'يمين','Drag fields into place':'اسحب الحقول إلى مكانها','Unsaved changes':'تغييرات غير محفوظة','Undo':'تراجع','Redo':'إعادة','Discard':'تجاهل','Save layout':'حفظ التخطيط',
+'Undo (Ctrl+Z)':'تراجع (Ctrl+Z)','Redo (Ctrl+Y)':'إعادة (Ctrl+Y)','Check layout. Arrow keys move the selected field.':'تخطيط الشيك. مفاتيح الأسهم تحرّك الحقل المحدد.',
+'Drag a field to move it, drag its green edge to change its width, or use the arrow keys (Shift for 1 cm). Nothing is stored until you press Save layout.':'اسحب الحقل لتحريكه، واسحب حافته الخضراء لتغيير عرضه، أو استخدم مفاتيح الأسهم (مع Shift للتحريك 1 سم). لا يُحفظ شيء حتى تضغط «حفظ التخطيط».',
+'Do you want to save your changes to this check layout?':'هل تريد حفظ تغييراتك على تخطيط هذا الشيك؟','Save':'حفظ','Keep editing':'متابعة التعديل',
+'People you pay':'المستفيدون من الشيكات','Add names, one per line':'أضف الأسماء، اسمًا في كل سطر','Add names':'إضافة الأسماء',
+'Search by name':'بحث بالاسم','Export CSV':'تصدير CSV','When':'الوقت','User':'المستخدم','Load more':'عرض المزيد',
+'Users':'المستخدمون','New user':'مستخدم جديد','User name':'اسم المستخدم','Password':'كلمة المرور','Leave empty to keep':'اتركها فارغة للإبقاء عليها','What this user can do':'ما يستطيع هذا المستخدم فعله',
+'Screen':'الشاشة','Open':'فتح','Add / edit':'إضافة / تعديل','Save user':'حفظ المستخدم','Delete user':'حذف المستخدم','Edit user':'تعديل مستخدم',
+'Company and backup':'الشركة والنسخ الاحتياطي','Company name (shown on the sign-in page and menu)':'اسم الشركة (يظهر في صفحة الدخول والقائمة)','Save name':'حفظ الاسم','Download backup':'تنزيل نسخة احتياطية',
+'The backup is a zip with your company’s data (banks, people, users, print history) and every check image. Keep copies somewhere safe.':'النسخة الاحتياطية ملف مضغوط يحوي بيانات شركتك (البنوك والمستفيدون والمستخدمون وسجل الطباعة) وكل صور الشيكات. احتفظ بنسخ في مكان آمن.',
+'Sign in':'تسجيل الدخول','Request failed.':'فشل الطلب.',
+'Amount in words':'المبلغ بالحروف','Stub date':'تاريخ الكعب','Stub name':'اسم الكعب','Stub amount':'مبلغ الكعب','Crossing lines':'خطا التسطير','First beneficiary only':'للمستفيد الأول فقط',
+'Daily':'يومي','Monthly':'شهري','Every 3 months':'كل 3 أشهر','Every 6 months':'كل 6 أشهر','Yearly':'سنوي','Sample name':'اسم تجريبي','Remove':'إزالة','Reuse':'إعادة الاستخدام',
+'Nothing to print yet.':'لا يوجد ما يُطبع بعد.','List copied. Paste it into Excel.':'تم نسخ القائمة. الصقها في إكسل.','Copy is blocked in this browser.':'النسخ محظور في هذا المتصفح.','Keep at least one bank.':'يجب الإبقاء على بنك واحد على الأقل.',
+'Image and layout saved.':'تم حفظ الصورة والتخطيط.','Layout saved.':'تم حفظ التخطيط.','Changes discarded.':'تم تجاهل التغييرات.','User saved.':'تم حفظ المستخدم.','User deleted.':'تم حذف المستخدم.',
+'This account has no access. Ask an administrator.':'هذا الحساب بلا صلاحيات. اطلب من المسؤول.','Company name saved.':'تم حفظ اسم الشركة.','Nothing printed yet.':'لم تتم أي طباعة بعد.',
+'No one yet. Add names above and they appear when you choose who to pay.':'لا يوجد أحد بعد. أضف الأسماء أعلاه لتظهر عند اختيار المستفيد.',
+'the name is missing':'الاسم مفقود','the date is not valid':'التاريخ غير صالح','the amount must be above 0':'يجب أن يكون المبلغ أكبر من صفر',
+'Check {0}: {1}.':'الشيك {0}: {1}.','{0} of these {1} check(s) were already printed (same name, date and amount). Print anyway?':'{0} من أصل {1} شيك سبقت طباعتها (نفس الاسم والتاريخ والمبلغ). هل تريد الطباعة رغم ذلك؟',
+'{0} check(s) · total {1} {2}':'{0} شيك · الإجمالي {1} {2}','Delete “{0}”?':'هل تريد حذف «{0}»؟','{0} name(s) added.':'تمت إضافة {0} اسم.','{0} of {1} checks':'{0} من {1} شيك',
+'License':'الترخيص','Status':'الحالة','Licensed to':'مرخّص إلى','Valid until':'صالح حتى','Users allowed':'عدد المستخدمين المسموح','This computer’s ID':'معرّف هذا الجهاز',
+'Licensed':'مرخّص','Free trial':'فترة تجريبية','Locked':'مقفل','Development (licensing off)':'وضع التطوير (الترخيص متوقف)','No expiry':'بلا انتهاء','Unlimited':'غير محدود',
+'Paste a new license key':'ألصق مفتاح ترخيص جديد','Activate':'تفعيل','Activate a license':'تفعيل الترخيص','License activated.':'تم تفعيل الترخيص.',
+'Free trial: {0} day(s) left.':'فترة تجريبية: متبقٍّ {0} يوم.','License expires in {0} day(s).':'ينتهي الترخيص خلال {0} يوم.','Printing is locked.':'الطباعة مقفلة.',
+'Please sign in.':'يرجى تسجيل الدخول.','Wrong user name or password.':'اسم المستخدم أو كلمة المرور غير صحيحة.','You may not open users.':'ليست لديك صلاحية فتح المستخدمين.','You may not edit users.':'ليست لديك صلاحية تعديل المستخدمين.',
+'You may not delete users.':'ليست لديك صلاحية حذف المستخدمين.','You may not edit check layouts.':'ليست لديك صلاحية تعديل تخطيط الشيكات.','You may not edit people.':'ليست لديك صلاحية تعديل المستفيدين.',
+'You may not download backups.':'ليست لديك صلاحية تنزيل النسخ الاحتياطية.','You may not open print history.':'ليست لديك صلاحية فتح سجل الطباعة.','User name must be 1 to 40 characters.':'يجب أن يتكون اسم المستخدم من 1 إلى 40 حرفًا.',
+'Password must be at least 6 characters.':'يجب ألا تقل كلمة المرور عن 6 أحرف.','That user name already exists.':'اسم المستخدم موجود مسبقًا.','At least one user must keep permission to edit users.':'يجب أن يحتفظ مستخدم واحد على الأقل بصلاحية تعديل المستخدمين.',
+'You cannot delete your own account.':'لا يمكنك حذف حسابك الخاص.','Image must be under 5 MB.':'يجب أن يقل حجم الصورة عن 5 ميغابايت.','A JPEG image is expected.':'المطلوب صورة بصيغة JPEG.','Not allowed.':'غير مسموح.','Not found.':'غير موجود.',
+'Invalid check row.':'صف شيك غير صالح.','1 to 600 checks expected.':'المطلوب من 1 إلى 600 شيك.','Request is too large.':'الطلب كبير جدًا.','Your license user limit has been reached.':'تم بلوغ الحد الأقصى للمستخدمين في ترخيصك.',
+'A valid license is required to print. Open Users and rights to activate one.':'يلزم ترخيص صالح للطباعة. افتح «المستخدمون والصلاحيات» لتفعيل ترخيص.','The license key is not valid.':'مفتاح الترخيص غير صالح.',
+'This license was issued for a different computer.':'صدر هذا الترخيص لجهاز آخر.','This license has expired.':'انتهت صلاحية هذا الترخيص.','The free trial has ended. Enter a license key to continue printing.':'انتهت الفترة التجريبية. أدخل مفتاح ترخيص لمتابعة الطباعة.',
+'The computer clock was set back. Fix the date and restart.':'تم إرجاع ساعة الجهاز. صحّح التاريخ وأعد التشغيل.','Licensing is not configured on this server.':'لم يتم إعداد الترخيص على هذا الخادم.',
+'Import banks from Access':'استيراد البنوك من أكسس','Select the exported CheckForms CSV together with the bank pictures named by bank code (1.jpg, 2.jpg …). Pictures alone refresh the size of existing banks.':'اختر ملف CheckForms المُصدَّر (CSV) مع صور البنوك المسماة حسب رمز البنك (1.jpg و2.jpg …). الصور وحدها تحدّث مقاس البنوك الموجودة.',
+'Select the CheckForms CSV file together with the bank images.':'اختر ملف CheckForms بصيغة CSV مع صور البنوك.','No bank rows found in that file.':'لم يتم العثور على بنوك في هذا الملف.',
+'{0} bank(s) will be added or replaced, with {1} picture(s). Continue?':'سيتم إضافة أو استبدال {0} بنك، مع {1} صورة. هل تريد المتابعة؟','{0} bank(s) imported.':'تم استيراد {0} بنك.','{0} picture(s) failed.':'تعذّر رفع {0} صورة.',
+'Size read from the picture: {0} × {1} cm ({2}).':'المقاس المقروء من الصورة: {0} × {1} سم ({2}).','assumed 96 dpi':'بافتراض 96 نقطة/بوصة','standard width 17.5 cm':'العرض القياسي 17.5 سم','Use picture size':'استخدام مقاس الصورة',
+'Show stub fields':'إظهار حقول الكعب','Field':'الحقل','This field is outside the check, so it will not print. Move it with the numbers below.':'هذا الحقل خارج الشيك ولن يُطبع. انقله باستخدام الأرقام أدناه.',
+'Paste bank table':'لصق جدول البنوك','Copy the CheckForms rows from Access or Excel, including the header row, and paste them here.':'انسخ صفوف CheckForms من أكسس أو إكسل مع صف العناوين والصقها هنا.','Import':'استيراد','Cancel':'إلغاء',
+'{0} bank(s) have fields outside the check. Upload their pictures so the size is read automatically.':'في {0} بنك حقول خارج الشيك. ارفع صورها ليُقرأ المقاس تلقائيًا.','{0} picture(s) updated.':'تم تحديث {0} صورة.',
+'Hide stub fields':'إخفاء حقول الكعب','This size looks unusual for a check. Use Calibrate with a ruler.':'هذا المقاس غير معتاد للشيك. استخدم «معايرة بالمسطرة».','Calibrate with a ruler':'معايرة بالمسطرة','calibrated with a ruler':'مُعايَر بالمسطرة','Real distance between the two points (cm)':'المسافة الحقيقية بين النقطتين (سم)','Size set to {0} × {1} cm.':'تم ضبط المقاس على {0} × {1} سم.',
+'Click two points on the picture whose real distance you know, for example the left and right edge of the check.':'انقر نقطتين على الصورة تعرف المسافة الحقيقية بينهما، مثل الحافة اليسرى واليمنى للشيك.',
+'This picture has no usable resolution information, so this size is only a guess. Measure your check and use Calibrate with a ruler, or type its real width.':'لا تحتوي هذه الصورة على دقة صالحة للاستخدام، لذا هذا المقاس تخمين فقط. قِس شيكك واستخدم «معايرة بالمسطرة» أو اكتب عرضه الحقيقي.','Smallest text size (pt)':'أصغر حجم للنص (نقطة)','Text that is too long for its field shrinks to the smallest size, then continues on a second line.':'النص الأطول من حقله يصغر حتى أصغر حجم، ثم يكمل في سطر ثانٍ.','Company code':'رمز الشركة','Enter your company code.':'أدخل رمز الشركة.','Wrong company code, user name or password.':'رمز الشركة أو اسم المستخدم أو كلمة المرور غير صحيحة.',
+'This company account is suspended.':'حساب هذه الشركة موقوف.','Too many attempts. Try again in a few minutes.':'محاولات كثيرة. حاول بعد بضع دقائق.','This license was issued for a different company.':'صدر هذا الترخيص لشركة أخرى.','Company name must be 1 to 60 characters.':'يجب أن يتكون اسم الشركة من 1 إلى 60 حرفًا.','Preview text color (never printed)':'لون النص في المعاينة (لا يُطبع أبدًا)','Preview text color':'لون نص المعاينة','Keep picture proportions':'الحفاظ على أبعاد الصورة','Print test sheet':'طباعة ورقة اختبار','Test sheet':'ورقة اختبار',
+'Print test sheet prints the check outline with 1 cm marks and every field box. Measure it with a ruler, or lay it over a real check.':'تطبع ورقة الاختبار حدود الشيك مع علامات كل 1 سم وصندوق كل حقل. قِسها بمسطرة، أو ضعها فوق شيك حقيقي.'};
+
+let LANG='';try{LANG=localStorage.getItem('checkprint.lang')||''}catch(e){}
+LANG=LANG||((navigator.language||'').startsWith('ar')?'ar':'en');
+const T=(k,...a)=>{let s=(LANG=='ar'&&AR[k])||k;a.forEach((v,i)=>s=s.replace('{'+i+'}',()=>v));return s};
+document.documentElement.lang=LANG;if(LANG=='ar')document.documentElement.dir='rtl';
+(function trDom(){if(LANG!='ar')return;const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),ns=[];while(w.nextNode())ns.push(w.currentNode);
+ for(const n of ns){const k=n.nodeValue.trim();if(k&&AR[k])n.nodeValue=n.nodeValue.replace(k,()=>AR[k])}
+ for(const e of document.querySelectorAll('[placeholder],[title],[aria-label]'))for(const a of['placeholder','title','aria-label']){const v=e.getAttribute(a);if(v&&AR[v])e.setAttribute(a,AR[v])}})();
+$$('.lng button').forEach(b=>{b.classList.toggle('on',b.dataset.l==LANG);b.onclick=()=>{try{localStorage.setItem('checkprint.lang',b.dataset.l)}catch(e){}location.reload()}});
+const toast=m=>{const e=$('#toast');e.textContent=T(m);e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3400)};
+
+/* ---------- Amount in words ---------- */
+const AO=['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'],
+AT=['','','عشرون','ثلاثون','أربعون','خمسون','ستون','سبعون','ثمانون','تسعون'],
+AH=['','مائة','مائتان','ثلاثمائة','أربعمائة','خمسمائة','ستمائة','سبعمائة','ثمانمائة','تسعمائة'],
+AS=[0,['ألف','ألفان','آلاف'],['مليون','مليونان','ملايين'],['مليار','ملياران','مليارات']];
+const ag=n=>{const r=n%100,p=[];if(n>99)p.push(AH[n/100|0]);if(r)p.push(r<20?AO[r]:(r%10?AO[r%10]+' و':'')+AT[r/10|0]);return p.join(' و')};
+function ar(n){if(!n)return'صفر';const o=[];for(let i=0;n>0;i++,n=Math.floor(n/1000)){const g=n%1000;if(!g)continue;const s=AS[i];
+ o.unshift(!i?ag(g):g==1?s[0]:g==2?s[1]:g==200?'مائتا '+s[0]:ag(g)+' '+(g%100>2&&g%100<11?s[2]:s[0]))}return o.join(' و')}
+const EO=' One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen Sixteen Seventeen Eighteen Nineteen'.split(' '),
+ET='  Twenty Thirty Forty Fifty Sixty Seventy Eighty Ninety'.split(' ');
+const e3=n=>{const r=n%100;return[n>99&&EO[n/100|0]+' Hundred',r&&(r<20?EO[r]:ET[r/10|0]+(r%10?' '+EO[r%10]:''))].filter(Boolean).join(' ')};
+function en(n){if(!n)return'Zero';const s=['','Thousand','Million','Billion'],o=[];for(let i=0;n>0;i++,n=Math.floor(n/1000)){const g=n%1000;if(g)o.unshift(e3(g)+(i?' '+s[i]:''))}return o.join(' ')}
+const CUR={EGP:'جنيه مصري',SAR:'ريال سعودي',USD:'دولار أمريكي',EUR:'يورو',GBP:'جنيه إسترليني',AED:'درهم إماراتي',JPY:'ين ياباني'};
+function words(a,cur,isAr){const c=Math.round(a*100),i=Math.floor(c/100),f=c%100,fr=f?' و '+String(f).padStart(2,'0')+'/100':'';
+ return isAr?`فقط ${ar(i)}${fr} ${CUR[cur]} لاغير`:`Only ${en(i)}${f?' and '+String(f).padStart(2,'0')+'/100':''} ${cur}`}
+
+/* ---------- Dates ---------- */
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pd=s=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(s||'');if(!m)return null;const d=new Date(+m[1],m[2]-1,+m[3]);return iso(d)==s?d:null};
+const fmt=(s,a)=>{if(!pd(s))return'';const[y,m,d]=s.split('-');return a?`${y}/${m}/${d}`:`${d}/${m}/${y}`};
+const addD=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const addM=(d,n)=>{const t=new Date(d.getFullYear(),d.getMonth()+n,1);t.setDate(Math.min(d.getDate(),new Date(t.getFullYear(),t.getMonth()+1,0).getDate()));return t};
+function parseDate(s){const m=/^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4})$/.exec((s||'').trim());if(!m)return'';
+ let[y,mo,d]=m[1].length==4?[m[1],m[2],m[3]]:[m[3],m[2],m[1]];if(y.length<4)y=2000+ +y;const t=new Date(+y,mo-1,+d);return iso(t)}
+
+/* ---------- Data ---------- */
+const FIELDS=[['date','Check date'],['person','Pay to'],['words','Amount in words'],['amount','Amount'],['sd','Stub date'],['sp','Stub name'],['sa','Stub amount'],['cross','Crossing lines'],['first','First beneficiary only']];
+const GROUP={sd:'stub',sp:'stub',sa:'stub',cross:'cross',first:'first'};
+const DEF={date:{x:13,y:1.2,w:3.6,a:'right'},person:{x:6,y:2.4,w:10.5,a:'left'},words:{x:3.3,y:3.5,w:13.2,a:'left'},amount:{x:12.4,y:4.9,w:4.2,a:'right'},
+ sd:{x:.5,y:1.2,w:2.4,a:'right'},sp:{x:.5,y:2.4,w:2.4,a:'left'},sa:{x:.5,y:3.6,w:2.4,a:'right'},cross:{x:4,y:.3,w:1.4,a:'left'},first:{x:7.5,y:.4,w:5,a:'center'}};
+/* ---------- Server, sign-in, rights ---------- */
+async function api(m,u,b){const r=await fetch('/api/'+u,{method:m,headers:{'Content-Type':'application/json'},body:m=='GET'?undefined:JSON.stringify(b||{})});
+ const j=await r.json().catch(()=>({}));if(r.status==401&&u!='me'&&u!='login')location.reload();
+ if(!r.ok)throw new Error(T(j.error||'Request failed.'));return j}
+const loginScreen=()=>new Promise(res=>{$('#login').hidden=false;$('#ln').focus();
+ $('#lf').onsubmit=async e=>{e.preventDefault();$('#le').textContent='';try{await api('POST','login',{tenant:$('#lt').value.trim(),name:$('#ln').value.trim(),password:$('#lp').value});if(MULTI){try{localStorage.setItem(TKEY,$('#lt').value.trim().toLowerCase())}catch(e){}}$('#lp').value='';$('#login').hidden=true;res()}catch(x){$('#le').textContent=x.message}}});
+let CO='';function brand(n){CO=n;$('#cn').textContent=n||T('Check Printing');$('#lh').textContent=n||T('Sign in');document.title=n||T('Check Printing')}
+let MULTI=false;const TKEY='checkprint.tenant',tcode=()=>{try{return localStorage.getItem(TKEY)||''}catch(e){return ''}};
+try{const j=await api('GET','company');MULTI=j.multi;brand(j.name);                    // several companies share this server: ask for the company code
+ if(MULTI&&tcode())brand((await api('GET','company?tenant='+encodeURIComponent(tcode()))).name)}catch(e){}
+$('#lcl').hidden=!MULTI;$('#lt').value=tcode();
+$('#lt').onchange=async()=>{try{brand((await api('GET','company?tenant='+encodeURIComponent($('#lt').value.trim()))).name)}catch(e){}};
+let ME;while(!ME){try{ME=await api('GET','me')}catch(e){await loginScreen()}}
+brand(ME.company);
+const CAN=(o,i)=>!!(ME.rights[o]||[])[i];
+const D0=await api('GET','data');let LP={};try{LP=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
+const DB={banks:D0.banks||[],people:D0.people||[],prefs:LP};
+let pushT;async function push(){const b={};if(CAN('design',1))b.banks=DB.banks;if(CAN('people',1))b.people=DB.people;
+ if(!Object.keys(b).length)return;try{await api('PUT','data',b)}catch(e){toast(e.message)}}
+const savePrefs=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB.prefs))}catch(e){}};
+const save=()=>{savePrefs();clearTimeout(pushT);pushT=setTimeout(push,400)};
+const newBank=n=>({id:Date.now().toString(36),name:n,w:17.5,h:7.5,t:0,l:0,img:'',f:structuredClone(DEF)});
+if(!DB.banks.length)DB.banks.push(newBank('Sample bank'));
+DB.banks.forEach(b=>b.f={...structuredClone(DEF),...b.f});
+const P=DB.prefs={bank:DB.banks[0].id,cur:'EGP',ar:true,font:'Times New Roman',size:12,rot:false,stub:false,cross:false,first:false,bg:true,dstub:true,plock:true,pcolor:'#d40000',minsize:9,...DB.prefs};
+const bank=()=>DB.banks.find(b=>b.id==P.bank)||DB.banks[0];
+const S={mode:'one',sel:0,dk:null};
+
+/* ---------- Check rendering (everything in cm, real size) ---------- */
+function pg(b,r,o){
+ const rot=o.rot,W=rot?b.h:b.w,H=rot?b.w:b.h,l=o.nom?0:b.l,t=o.nom?0:b.t;
+ const c=h('div',{class:'chk',style:`width:${b.w}cm;height:${b.h}cm;font:${o.size}pt/1.25 '${o.font}',serif;`+(rot?`transform-origin:0 0;transform:translate(${l}cm,${b.w+t}cm) rotate(-90deg)`:`left:${l}cm;top:${t}cm`)});
+ if(o.bg&&b.img)c.style.background=`url(${b.img}) 0 0/100% 100%`;
+ if(o.test){c.classList.add('tst');const W2=b.w,H2=b.h;let k='',n='';                      // outline + cm ruler marks, all in real cm
+  for(let x=1;x<W2;x++){const L=x%5?.25:.5;k+=`M${x} 0v${L}M${x} ${H2}v${-L}`;if(x%5==0)n+=`<text x="${x}" y="${L+.45}" text-anchor="middle">${x}</text>`}
+  for(let y=1;y<H2;y++){const L=y%5?.25:.5;k+=`M0 ${y}h${L}M${W2} ${y}h${-L}`;if(y%5==0)n+=`<text x="${L+.1}" y="${y+.14}">${y}</text>`}
+  c.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W2} ${H2}" style="position:absolute;left:0;top:0;width:${W2}cm;height:${H2}cm"><rect x=".015" y=".015" width="${W2-.03}" height="${H2-.03}" fill="none" stroke="#000" stroke-width=".03"/><path d="${k}" stroke="#000" stroke-width=".03" fill="none"/><g fill="#000" font-size=".4" font-family="Arial">${n}<text x="${W2/2}" y="${H2-.3}" text-anchor="middle">${T('Test sheet')}: ${W2.toFixed(2)} × ${H2.toFixed(2)} cm</text></g></svg>`)}
+ const a=+r.a||0,am=a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),ds=fmt(r.d,o.ar);
+ const txt={date:ds,person:r.p,words:a>0?words(a,o.cur,o.ar):'',amount:a>0?`#${am}#`:'',sd:ds,sp:r.p,sa:a>0?am:'',first:'يصرف للمستفيد الأول'};
+ for(const[k]of FIELDS){if(o.noStub&&GROUP[k]=='stub')continue;if(!o.all&&GROUP[k]&&!o[GROUP[k]])continue;const f=b.f[k];
+  const e=h('div',{class:'fld','data-k':k,dir:'auto',style:`left:${f.x}cm;top:${f.y}cm;width:${f.w}cm;text-align:${f.a}`});
+  if(k=='cross'){e.innerHTML='<svg viewBox="0 0 40 50" style="height:auto"><path d="M5 48 19 2M21 48 35 2" stroke="currentColor" stroke-width="3" fill="none"/></svg>';e.style.height='auto';e.style.overflow='visible'}
+  else{e.textContent=txt[k];if(k=='first')e.style.fontWeight='bold';if(k=='words')e.style.fontWeight='bold'}
+  c.append(e)}
+ const p=h('div',{class:o.paper?'pg paper':'pg',style:`width:${W}cm;height:${H}cm`},c);p.W=W;p.H=H;if(o.paper)p.style.setProperty('--pc',P.pcolor);return p}
+const fit=c=>c.querySelectorAll('.fld').forEach(e=>{const base=parseFloat(c.style.fontSize),min=Math.min(+P.minsize||9,base);let z=base;   // shrink, but never below the smallest size
+ while(e.scrollWidth>e.clientWidth+1&&z>min){z-=.5;e.style.fontSize=z+'pt'}
+ if(e.scrollWidth>e.clientWidth+1&&e.dataset.k!='cross'){Object.assign(e.style,{whiteSpace:'normal',height:'auto',overflow:'visible',lineHeight:'1.15'})}});   // still too long: continue on a second line
+function mount(box,p,avail){const s=Math.min(1,avail/(p.W*PX));box.replaceChildren(p);box.style.width=p.W*PX*s+'px';box.style.height=p.H*PX*s+'px';p.style.transform=`scale(${s})`;fit(p.firstChild);return s}
+
+/* ---------- Print tab ---------- */
+const V=id=>$('#'+id).value;
+const PER={d:['Daily',(s,k)=>addD(s,k)],m:['Monthly',(s,k)=>addM(s,k)],q:['Every 3 months',(s,k)=>addM(s,3*(k+1))],s:['Every 6 months',(s,k)=>addM(s,6*(k+1))],y:['Yearly',(s,k)=>addM(s,12*(k+1))]};
+function rows(){
+ if(S.mode=='one')return[{p:V('person').trim(),d:V('date'),a:+V('amount')}];
+ if(S.mode=='sch'){const s=pd(V('date')),out=[];if(!s)return[{p:V('person').trim(),d:'',a:0}];
+  for(const k in PER){if(!$('#pk'+k).checked)continue;const n=Math.min(+V('pn'+k)||0,600),a=+V('pa'+k);for(let i=0;i<n;i++)out.push({p:V('person').trim(),d:iso(PER[k][1](s,i)),a})}
+  return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
+ const L=V('list').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ return L.map((l,i)=>{const c=l.split(l.includes('\t')?'\t':l.includes(';')?';':',').map(x=>x.trim()),a=+(c[2]||'').replace(/[^\d.]/g,'');
+  return{p:c[0],d:parseDate(c[1]),a,hdr:!i&&!/\d/.test(c[2]||'')&&!parseDate(c[1])}}).filter(r=>!r.hdr)}
+const problem=r=>!r.p?'the name is missing':!pd(r.d)?'the date is not valid':!(r.a>0&&r.a<1e12)?'the amount must be above 0':'';
+const money=a=>(+a||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function update(){
+ const R=rows();S.sel=Math.min(S.sel,Math.max(R.length-1,0));
+ $('#qb').replaceChildren(...R.map((r,i)=>{const bad=problem(r),tr=h('tr',{class:'q'+(i==S.sel?' on':'')},h('td',{},i+1),h('td',{dir:'auto'},r.p||'—'),h('td',{class:bad?'bad-t':''},fmt(r.d,P.ar)||'—'),h('td',{class:'n'+(bad?' bad-t':'')},money(r.a)));
+  tr.onclick=()=>{S.sel=i;update()};return tr}));
+ const tot=R.reduce((s,r)=>s+(r.a||0),0);
+ $('#qt').textContent=R.length?T('{0} check(s) · total {1} {2}',R.length,money(tot),P.cur):T('Checks');
+ const r=R[S.sel],rec=r&&(r.p||r.a>0)?r:{p:T('Sample name'),d:iso(new Date()),a:12345.5};   // show what is typed so far; sample only while the form is empty
+ mount($('#pv'),pg(bank(),rec,{...P,paper:1}),$('#pvw').clientWidth-30);
+ $('#amt').hidden=S.mode!='one'}
+async function doPrint(){
+ const R=rows();if(!R.length)return toast('Nothing to print yet.');
+ for(let i=0;i<R.length;i++){const m=problem(R[i]);if(m)return toast(T('Check {0}: {1}.',i+1,T(m)))}
+ const jr=R.map(r=>({p:r.p,d:r.d,a:r.a}));
+ try{const{dupes}=await api('POST','jobs/dupes',{rows:jr});if(dupes.length&&!confirm(T('{0} of these {1} check(s) were already printed (same name, date and amount). Print anyway?',dupes.length,R.length)))return;await api('POST','jobs',{rows:jr,bank:bank().name,cur:P.cur})}catch(e){return toast(e.message)}
+ const b=bank(),pr=$('#pr');pr.replaceChildren(...R.map(r=>pg(b,r,{...P,bg:false})));
+ $('#pgs').textContent=`@page{size:${pr.firstChild.W}cm ${pr.firstChild.H}cm;margin:0}`;
+ pr.querySelectorAll('.chk').forEach(fit);print()}
+async function copyList(){
+ const R=rows(),t=['Serial\tBank\tPay to\tDate\tAmount\tCurrency',...R.map((r,i)=>[i+1,bank().name,r.p,fmt(r.d,P.ar),r.a,P.cur].join('\t'))].join('\n');
+ try{await navigator.clipboard.writeText(t);toast('List copied. Paste it into Excel.')}catch(e){toast('Copy is blocked in this browser.')}}
+function fillBanks(){for(const id of['bank','dbank']){const s=$('#'+id);s.replaceChildren(...DB.banks.map((b,i)=>h('option',{value:b.id},String(i+1).padStart(2,'0')+'  '+b.name)));s.value=bank().id}}
+
+/* ---------- Designer ---------- */
+const snap=b=>JSON.stringify(b),H={s:[],i:0,k:null,t:0},isDirty=()=>!!S.base&&snap(bank())!=S.base;
+function design(){
+ const b=bank(),box=$('#ds');S.cal=null;box.style.cursor='';if(S.bid!=b.id){S.bid=b.id;S.base=snap(b);H.s=[S.base];H.i=0;H.k=null}
+ for(const[id,k]of[['bn','name'],['bw','w'],['bh','h'],['bl','l'],['bt','t']]){const el=$('#'+id);if(document.activeElement!==el)el.value=b[k]}
+ $$('#dstubseg button').forEach(x=>x.classList.toggle('on',(x.dataset.v=='1')==!!P.dstub));
+ const p=pg(b,{p:'Ahmed Mohamed Ali',d:iso(new Date()),a:25500.5},{cur:'EGP',ar:true,font:P.font,size:P.size,rot:false,all:true,bg:true,paper:1,nom:1,noStub:!P.dstub});
+ S.s=mount(box,p,$('#dw').clientWidth-30);
+ $$('#ds .fld').forEach(e=>e.append(h('i',{class:'rs'})));lock();ui();szUI();sel(S.dk)}
+function lock(){const ed=CAN('design',1);$$('#design input,#design select,#design button').forEach(e=>e.disabled=!ed&&e.id!='dbank');$('#bdel').disabled=!CAN('design',2)}
+function sel(k){S.dk=k;$$('#ds .fld').forEach(e=>e.classList.toggle('sel',e.dataset.k==k));const f=k&&bank().f[k];
+ $('#fn').textContent=k?T(FIELDS.find(x=>x[0]==k)[1]):T('Select a field on the check');
+ $('#fsel').value=k||'';{const b=bank();$('#fo').hidden=!(f&&(f.x>=b.w||f.y>=b.h))}
+ for(const[id,p]of[['fx','x'],['fy','y'],['fw','w'],['fa','a']]){$('#'+id).value=f?f[p]:'';$('#'+id).disabled=!f||!CAN('design',1)}}
+function place(k){const e=$(`#ds .fld[data-k=${k}]`),q=bank().f[k];e.style.left=q.x+'cm';e.style.top=q.y+'cm';e.style.width=q.w+'cm';e.style.textAlign=q.a;sel(k)}
+function touch(key){const s=snap(bank());if(key&&H.k==key&&Date.now()-H.t<800)H.s[H.i]=s;else{H.s.splice(H.i+1);H.s.push(s);H.i=H.s.length-1;if(H.s.length>100){H.s.shift();H.i--}}H.k=key;H.t=Date.now();ui()}
+function ui(){const ed=CAN('design',1),d=isDirty();$('#undo').disabled=!ed||H.i<1;$('#redo').disabled=!ed||H.i>=H.s.length-1;$('#sv').disabled=$('#dis').disabled=!ed||!d;$('#dirty').hidden=!d}
+function restore(s){DB.banks[DB.banks.findIndex(b=>b.id==P.bank)]=JSON.parse(s);H.k=null;design()}
+const undo=()=>{if(H.i>0){H.i--;restore(H.s[H.i])}},redo=()=>{if(H.i<H.s.length-1){H.i++;restore(H.s[H.i])}};
+function commit(){save();S.base=snap(bank());H.s=[S.base];H.i=0;H.k=null;ui()}
+function revert(){restore(S.base);H.s=[S.base];H.i=0;ui()}
+async function leave(){if(!isDirty())return true;const d=$('#dlg');d.returnValue='';d.showModal();
+ const v=await new Promise(r=>d.addEventListener('close',()=>r(d.returnValue),{once:true}));
+ if(v=='save'){commit();return true}if(v=='discard'){revert();return true}return false}
+$('#undo').onclick=undo;$('#redo').onclick=redo;$('#sv').onclick=()=>{commit();toast('Layout saved.')};$('#dis').onclick=()=>{revert();toast('Changes discarded.')};
+addEventListener('keydown',e=>{if($('#design').hidden||!(e.ctrlKey||e.metaKey)||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;const k=e.key.toLowerCase();
+ if(k=='z'&&!e.shiftKey){e.preventDefault();undo()}else if(k=='y'||(k=='z'&&e.shiftKey)){e.preventDefault();redo()}else if(k=='s'){e.preventDefault();if(isDirty()){commit();toast('Layout saved.')}}});
+addEventListener('beforeunload',e=>{if(isDirty()){e.preventDefault();e.returnValue=''}});
+function calPoint(e){const b=bank(),pgEl=$('#ds .pg'),r=pgEl.getBoundingClientRect(),pt=[(e.clientX-r.left)/(S.s*PX),(e.clientY-r.top)/(S.s*PX)];
+ S.cal.push(pt);pgEl.append(h('i',{class:'calpt',style:`left:${pt[0]}cm;top:${pt[1]}cm`}));if(S.cal.length<2)return;
+ const[p,q]=S.cal,d=Math.hypot(q[0]-p[0],q[1]-p[1]);S.cal=null;$('#ds').style.cursor='';
+ const real=parseFloat(String(prompt(T('Real distance between the two points (cm)'))||'').replace(',','.'));
+ if(!(real>0&&d>0.2))return design();
+ const k=real/d;b.w=Math.round(b.w*k*100)/100;b.h=Math.round(b.h*k*100)/100;b.auto={w:b.w,h:b.h,ratio:b.h/b.w,dpi:0,src:'cal'};touch('cal');design();toast(T('Size set to {0} × {1} cm.',b.w.toFixed(2),b.h.toFixed(2)))}
+$('#ical').onclick=()=>{S.cal=[];$('#ds').style.cursor='crosshair';toast('Click two points on the picture whose real distance you know, for example the left and right edge of the check.')};
+$('#ds').onpointerdown=e=>{if(S.cal){e.preventDefault();return calPoint(e)}const f=e.target.closest('.fld');if(!f)return sel(null);if(!CAN('design',1))return sel(f.dataset.k);const k=f.dataset.k,b=bank(),o={...b.f[k]},x0=e.clientX,y0=e.clientY,rs=e.target.classList.contains('rs');
+ sel(k);f.setPointerCapture(e.pointerId);
+ f.onpointermove=v=>{const q=b.f[k],dx=(v.clientX-x0)/(S.s*PX),dy=(v.clientY-y0)/(S.s*PX);
+  if(rs)q.w=Math.max(.5,r2(o.w+dx));else{q.x=Math.min(Math.max(0,r2(o.x+dx)),b.w-.5);q.y=Math.min(Math.max(0,r2(o.y+dy)),b.h-.4)}place(k)};
+ f.onpointerup=()=>{f.onpointermove=f.onpointerup=null;touch()}};
+$('#ds').onkeydown=e=>{const k=S.dk,d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!k||!d||!CAN('design',1))return;e.preventDefault();
+ const q=bank().f[k],s=e.shiftKey?1:.05;q.x=Math.max(0,r2(q.x+d[0]*s));q.y=Math.max(0,r2(q.y+d[1]*s));place(k);touch('k'+k)};
+$('#design').addEventListener('input',e=>{const b=bank(),id=e.target.id,m={bn:'name',bw:'w',bh:'h',bl:'l',bt:'t'}[id];
+ if(id=='plock'){P.plock=e.target.checked;savePrefs();return}
+ if(id=='dcolor'){P.pcolor=e.target.value;savePrefs();$('#ds .pg')?.style.setProperty('--pc',P.pcolor);return}
+ if(m){const r0=b.auto?b.auto.ratio:b.h/b.w;b[m]=m=='name'?e.target.value:+e.target.value||0;
+  if(P.plock&&b.img&&(m=='w'||m=='h')&&b[m]>0){if(m=='w')b.h=Math.round(b.w*r0*100)/100;else b.w=Math.round(b.h/r0*100)/100}   // typing the real width (ruler) fixes the height
+  if(m!='name'&&(b.w<5||b.h<3))return;touch(id);if(m=='name')fillBanks();else design()}
+ const fp={fx:'x',fy:'y',fw:'w',fa:'a'}[id];if(fp&&S.dk){b.f[S.dk][fp]=fp=='a'?e.target.value:+e.target.value||0;touch(id);design()}});
+$('#img').onchange=async e=>{const file=e.target.files[0],b=bank();e.target.value='';if(!file)return;
+ try{Object.assign(b,await upload(b.id,file));commit();design();toast('Image and layout saved.')}catch(x){toast(x.message)}};
+$('#imgx').onclick=async()=>{const b=bank();try{await fetch('/api/image/'+b.id,{method:'DELETE'})}catch(e){}b.img='';commit();design()};
+/* ---------- Bulk import of banks from an Access export ---------- */
+const MAPF={date:'CheckDate',person:'Person',words:'LabTafkeet',amount:'Amount',sd:'TxtCheckDate',sp:'TxtPerson',sa:'TxtAmount',cross:'TxtTasteer',first:'Mostafeed'};
+const ALIGN0={date:'right',person:'left',words:'left',amount:'right',sd:'right',sp:'left',sa:'right',cross:'left',first:'center'};
+const num=(v,d=0)=>{const x=parseFloat(String(v??'').replace(',','.'));return isFinite(x)?Math.round(x*100)/100:d};
+function csv(text){text=text.replace(/^\s+/,'');const d=[',',';','\t'].map(c=>[c,text.split('\n')[0].split(c).length]).sort((a,b)=>b[1]-a[1])[0][0],rows=[];let r=[],f='',q=false;
+ for(let i=0;i<text.length;i++){const c=text[i];
+  if(q){if(c=='"'){if(text[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c=='"')q=true;else if(c==d){r.push(f);f=''}
+  else if(c=='\n'||c=='\r'){if(c=='\r'&&text[i+1]=='\n')i++;r.push(f);f='';if(r.some(x=>x!==''))rows.push(r);r=[]}else f+=c}
+ if(f!==''||r.length){r.push(f);rows.push(r)}
+ const hd=rows.shift().map(x=>x.replace(/^\ufeff/,'').trim().toLowerCase());
+ return rows.map(r=>Object.fromEntries(hd.map((k,i)=>[k,(r[i]||'').trim()])))}
+function bankFromRow(r){const code=String(parseInt(r.bankcode)),f={};
+ for(const[k,p]of Object.entries(MAPF)){const q=p.toLowerCase();f[k]={x:num(r[q+'left']),y:num(r[q+'top']),w:num(r[q+'width'])||DEF[k].w,a:ALIGN0[k]}}
+ return{id:code,name:r.bankname||code,w:17.5,h:7.5,t:num(r.topmargin),l:num(r.leftmargin),img:'',f}}
+/* Physical size of a picture from its own resolution (JPEG JFIF / EXIF, PNG pHYs); like the old program, 96 dpi if it has none. */
+function dpiOf(buf){try{const v=new DataView(buf);
+ if(v.getUint16(0)==0xFFD8){let i=2;while(i+4<v.byteLength&&v.getUint8(i)==0xFF){const m=v.getUint8(i+1),len=v.getUint16(i+2);
+   if(m==0xE0&&v.getUint32(i+4)==0x4A464946){const u=v.getUint8(i+11),x=v.getUint16(i+12),y=v.getUint16(i+14);if(x&&y&&u==1)return[x,y];if(x&&y&&u==2)return[x*2.54,y*2.54]}
+   if(m==0xE1&&v.getUint32(i+4)==0x45786966){const t=i+10,le=v.getUint16(t)==0x4949,g16=o=>v.getUint16(o,le),g32=o=>v.getUint32(o,le),ifd=t+g32(t+4);let X,Y,U=2;
+    for(let k=0,n=g16(ifd);k<n;k++){const e=ifd+2+k*12,tag=g16(e),rat=()=>{const o=t+g32(e+8);return g32(o)/g32(o+4)};if(tag==0x11A)X=rat();else if(tag==0x11B)Y=rat();else if(tag==0x128)U=g16(e+8)}
+    if(X&&Y)return U==3?[X*2.54,Y*2.54]:[X,Y]}
+   if(m==0xDA)break;i+=2+len}}
+ else if(v.getUint32(0)==0x89504E47){let i=8;while(i+12<=v.byteLength){const len=v.getUint32(i),ty=v.getUint32(i+4);
+   if(ty==0x70485973){const x=v.getUint32(i+8),y=v.getUint32(i+12);if(v.getUint8(i+16)==1&&x&&y)return[x*.0254,y*.0254];break}
+   if(ty==0x49444154)break;i+=12+len}}}catch(e){}return null}
+async function prep(file){const dpi=dpiOf(await file.arrayBuffer());                       // data: URL, because the page's security policy blocks blob: images
+ const url=await new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=no;fr.readAsDataURL(file)});
+ const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error(file.name));i.src=url});
+ const k=Math.min(1,1600/im.width),c=h('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+ const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.85));
+ let src=dpi?'dpi':'96',w=im.width/(dpi?dpi[0]:96)*2.54,ht=im.height/(dpi?dpi[1]:96)*2.54;
+ if(w<12||w>28){w=17.5;ht=w*im.height/im.width;src='std'}                                  // implausible size: use a standard width instead
+ return{blob,w:Math.round(w*100)/100,h:Math.round(ht*100)/100,ratio:ht/w,dpi:dpi?Math.round(dpi[0]):0,src}}
+const upload=async(id,f)=>{const q=await prep(f),r=await fetch('/api/image/'+id,{method:'POST',headers:{'Content-Type':'image/jpeg'},body:q.blob}),j=await r.json();if(!r.ok)throw new Error(T(j.error));
+ return{img:j.url,w:q.w,h:q.h,auto:{w:q.w,h:q.h,ratio:q.ratio,dpi:q.dpi,src:q.src}}};
+function szUI(){const b=bank(),a=b.auto,guess=a&&a.src!='dpi'&&a.src!='cal',odd=b.img&&(b.w<12||b.w>28);   // a check is never 40 cm wide: flag sizes that look wrong, even on older banks
+ $('#sz').textContent=a?T('Size read from the picture: {0} × {1} cm ({2}).',a.w.toFixed(2),a.h.toFixed(2),{dpi:a.dpi+' dpi','96':T('assumed 96 dpi'),std:T('standard width 17.5 cm'),cal:T('calibrated with a ruler')}[a.src])+(guess?' '+T('This picture has no usable resolution information, so this size is only a guess. Measure your check and use Calibrate with a ruler, or type its real width.'):''):'';
+ if(odd&&!guess)$('#sz').textContent+=(a?' ':'')+T('This size looks unusual for a check. Use Calibrate with a ruler.');
+ $('#sz').classList.toggle('bad-t',!!(guess||odd));$('#isz').disabled=!a||!CAN('design',1);$('#ical').disabled=!b.img||!CAN('design',1)}
+$('#isz').onclick=()=>{const b=bank();if(!b.auto)return;b.w=b.auto.w;b.h=b.auto.h;touch('isz');design()};
+$('#dstubseg').onclick=e=>{const v=e.target.closest('button')?.dataset.v;if(v==null)return;P.dstub=v=='1';savePrefs();   // view option only: never pushes an unsaved layout
+ if(!P.dstub&&['sd','sp','sa'].includes(S.dk))S.dk=null;design()};
+$('#tsheet').onclick=()=>{const b=bank(),pr=$('#pr');                                      // test sheet uses the layout as currently edited
+ pr.replaceChildren(pg(b,{p:'Ahmed Mohamed Ali',d:iso(new Date()),a:25500.5},{...P,cur:'EGP',ar:true,all:true,noStub:!P.dstub,bg:false,test:true}));
+ $('#pgs').textContent=`@page{size:${pr.firstChild.W}cm ${pr.firstChild.H}cm;margin:0}`;pr.querySelectorAll('.chk').forEach(fit);print()};
+$('#fsel').onchange=e=>sel(e.target.value||null);
+async function importRows(rows,pics={}){
+ rows=rows.filter(r=>!isNaN(parseInt(r.bankcode)));if(!rows.length)return toast('No bank rows found in that file.');
+ const banks=rows.map(bankFromRow);
+ if(!confirm(T('{0} bank(s) will be added or replaced, with {1} picture(s). Continue?',banks.length,banks.filter(b=>pics[b.id]).length)))return;
+ let bad=0;
+ for(const b of banks){const f=pics[b.id],old=DB.banks.find(x=>x.id==b.id);
+  if(f){try{Object.assign(b,await upload(b.id,f))}catch(x){bad++}}
+  else if(old)Object.assign(b,{img:old.img,w:old.w,h:old.h,auto:old.auto})}      // keep the existing picture and size
+ for(const b of banks){const i=DB.banks.findIndex(x=>x.id==b.id);i<0?DB.banks.push(b):DB.banks[i]=b}
+ const off=banks.filter(b=>Object.values(b.f).some(f=>f.x>=b.w||f.y>=b.h)).length;
+ P.bank=banks[0].id;S.bid=null;S.dk=null;save();fillBanks();design();
+ toast(T('{0} bank(s) imported.',banks.length)+(bad?' '+T('{0} picture(s) failed.',bad):'')+(off?' '+T('{0} bank(s) have fields outside the check. Upload their pictures so the size is read automatically.',off):''))}
+async function picsOnly(pics){let n=0,bad=0;
+ for(const[id,f]of Object.entries(pics)){const b=DB.banks.find(x=>x.id==id);if(!b)continue;try{Object.assign(b,await upload(id,f));n++}catch(x){bad++}}
+ S.bid=null;save();design();toast(T('{0} picture(s) updated.',n)+(bad?' '+T('{0} picture(s) failed.',bad):''))}
+$('#imp').onchange=async e=>{const files=[...e.target.files];e.target.value='';if(!files.length||!await leave())return;
+ const tf=files.find(f=>/\.(csv|txt|tsv)$/i.test(f.name)),pics={};
+ files.forEach(f=>{const m=/^(\d+)\.(jpe?g|png)$/i.exec(f.name);if(m)pics[String(parseInt(m[1]))]=f});
+ if(!tf)return Object.keys(pics).length?picsOnly(pics):toast('Select the CheckForms CSV file together with the bank images.');
+ let text=await tf.text();if(text.includes('\ufffd'))text=new TextDecoder('windows-1256').decode(await tf.arrayBuffer());   // Arabic Windows export
+ let rows=[];try{rows=csv(text)}catch(x){}importRows(rows,pics)};
+$('#ipaste').onclick=async()=>{if(!await leave())return;const d=$('#pdlg');d.returnValue='';$('#ptx').value='';d.showModal()};
+$('#pdlg').addEventListener('close',()=>{if($('#pdlg').returnValue!='go')return;let rows=[];try{rows=csv($('#ptx').value)}catch(x){}importRows(rows)});
+$('#bnew').onclick=async()=>{if(!await leave())return;const n=prompt(T('Bank name'));if(!n||!n.trim())return;const b=newBank(n.trim());DB.banks.push(b);P.bank=b.id;save();fillBanks();design()};
+$('#bdel').onclick=()=>{if(DB.banks.length<2)return toast('Keep at least one bank.');if(!confirm(T('Delete “{0}”?',bank().name)))return;
+ DB.banks=DB.banks.filter(b=>b.id!=P.bank);P.bank=DB.banks[0].id;save();fillBanks();design()};
+
+/* ---------- People ---------- */
+function people(){$('#pn').disabled=$('#padd').disabled=!CAN('people',1);const L=$('#pl');L.replaceChildren(...DB.people.map((n,i)=>{const x=h('button',{'aria-label':T('Remove')+' '+n},'×');x.onclick=()=>{DB.people.splice(i,1);save();people()};return h('li',{dir:'auto'},n,...(CAN('people',2)?[x]:[]))}));
+ $('#dl').replaceChildren(...DB.people.map(n=>h('option',{value:n})));$('#pe').textContent=DB.people.length?'':T('No one yet. Add names above and they appear when you choose who to pay.')}
+$('#padd').onclick=()=>{const n=V('pn').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!n.length)return;
+ DB.people=[...new Set([...DB.people,...n])].sort((a,b)=>a.localeCompare(b,'ar'));$('#pn').value='';save();people();toast(T('{0} name(s) added.',n.length))};
+
+/* ---------- Wiring ---------- */
+const FONTS=['Times New Roman','Arial','Tahoma','Traditional Arabic','Simplified Arabic','Segoe UI','Calibri','Courier New'];
+$('#fsel').replaceChildren(h('option',{value:''},T('Select a field on the check')),...FIELDS.map(([k,n])=>h('option',{value:k},T(n))));
+$('#cur').replaceChildren(...Object.keys(CUR).map(c=>h('option',{},c)));
+$('#font').replaceChildren(...FONTS.map(c=>h('option',{},c)));
+$('#minsize').replaceChildren(...[6,7,8,9,10,11,12,13,14].map(c=>h('option',{},c)));
+$('#size').replaceChildren(...[10,11,12,13,14,15,16,17,18].map(c=>h('option',{},c)));
+$('#pers').replaceChildren(...Object.entries(PER).map(([k,[n0]])=>{const n=T(n0);return h('div',{class:'per'},h('input',{type:'checkbox',id:'pk'+k,'aria-label':n}),h('span',{},n),h('input',{id:'pn'+k,type:'number',min:'1',max:'600',value:'12','aria-label':n}),h('input',{id:'pa'+k,type:'number',min:'0',step:'0.01',placeholder:T('Amount'),'aria-label':n+' '+T('Amount')}))}));
+for(const k of['cur','font','size','minsize'])$('#'+k).value=P[k];
+for(const k of['ar','rot','stub','cross','first','bg','plock'])$('#'+k).checked=P[k];
+$('#date').value=iso(new Date());$('#pcolor').value=$('#dcolor').value=P.pcolor;
+$('#print').addEventListener('input',e=>{const id=e.target.id;
+ if(id=='bank')P.bank=e.target.value;else if(['cur','font'].includes(id))P[id]=e.target.value;else if(id=='size')P.size=+e.target.value;else if(id=='minsize')P.minsize=+e.target.value;else if(id=='pcolor')P.pcolor=e.target.value;
+ else if(['ar','rot','stub','cross','first','bg'].includes(id))P[id]=e.target.checked;
+ if(P.bank&&id=='bank'||id in P)save();update()});
+$('#modes').onclick=e=>{const m=e.target.dataset.m;if(!m)return;S.mode=m;S.sel=0;$$('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));
+ $('#sh').hidden=m=='list';$('#schb').hidden=m!='sch';$('#listb').hidden=m!='list';update()};
+$('#go').onclick=doPrint;$('#copy').onclick=copyList;
+$('#tabs').onclick=async e=>{const t=e.target.closest('button')?.dataset.t;if(!t)return;if(!await leave())return;if(t!='design'){S.base=null;S.bid=null}$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));
+ $$('.tab').forEach(s=>s.hidden=s.id!=t);fillBanks();t=='print'?update():t=='design'?design():t=='people'?people():t=='history'?hist():users()};
+$('#dbank').onchange=async e=>{if(!await leave()){e.target.value=P.bank;return}P.bank=e.target.value;S.dk=null;save();design()};
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{$('#design').hidden?update():design()},150)});
+/* ---------- Users tab ---------- */
+const OBJS=[['print','Print checks'],['design','Check designer'],['people','People'],['users','Users']];
+let US=[],UC={id:0};
+async function users(){$('#co').value=CO;$('#co').disabled=$('#cosave').disabled=$('#bk').disabled=!CAN('users',1);try{US=(await api('GET','users')).users}catch(e){return toast(e.message)}pickUser(US.find(u=>u.id==UC.id)||US[0])}
+function pickUser(u){UC=u||{id:0,name:'',rights:{}};const ed=CAN('users',1);
+ $('#un').value=UC.name;$('#up').value='';$('#uh').textContent=T(UC.id?'Edit user':'New user');
+ $('#ul').replaceChildren(...US.map(x=>{const b=h('button',{class:'btn'+(x.id==UC.id?' pri':'')},x.name);b.onclick=()=>pickUser(x);return b}));
+ $('#ur').replaceChildren(...OBJS.map(([k,n])=>h('tr',{},h('td',{},T(n)),...[0,1,2].map(i=>{const c=h('input',{type:'checkbox','data-k':k,'data-i':i,'aria-label':n+' '+i});c.checked=!!(UC.rights[k]||[])[i];c.disabled=!ed;return h('td',{},c)}))));
+ $('#un').disabled=$('#up').disabled=$('#usave').disabled=$('#unew').disabled=!ed;$('#udel').disabled=!CAN('users',2)||!UC.id||UC.id==ME.id}
+/* ---------- History, backup, company ---------- */
+const download=(blob,name)=>{const a=h('a',{href:URL.createObjectURL(blob),download:name});document.body.append(a);a.click();a.remove()};
+const when=t=>new Date(t*1000).toLocaleString(LANG=='ar'?'en-GB':undefined);let HO=0,ht;
+async function hist(more){if(!more)HO=0;try{const j=await api('GET',`jobs?q=${encodeURIComponent($('#hq').value.trim())}&limit=100&offset=${HO}`);
+ const rows=j.jobs.map(r=>{const b=h('button',{class:'btn'},T('Reuse'));b.onclick=()=>reuse(r);
+  return h('tr',{},h('td',{},when(r.at)),h('td',{},r.user),h('td',{dir:'auto'},r.bank),h('td',{dir:'auto'},r.payee),h('td',{},fmt(r.check_date,false)),h('td',{class:'n'},money(r.amount)+' '+r.currency),h('td',{},b))});
+ more?$('#hb').append(...rows):$('#hb').replaceChildren(...rows);HO+=j.jobs.length;$('#hm').hidden=HO>=j.total;$('#hn').textContent=j.total?T('{0} of {1} checks',HO,j.total):T('Nothing printed yet.')}catch(e){toast(e.message)}}
+function reuse(r){S.mode='one';$$('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m=='one'));$('#sh').hidden=false;$('#schb').hidden=$('#listb').hidden=true;
+ $('#person').value=r.payee;$('#date').value=iso(new Date());$('#amount').value=r.amount;$('#tabs [data-t=print]').click()}
+$('#hq').oninput=()=>{clearTimeout(ht);ht=setTimeout(()=>hist(),250)};$('#hm').onclick=()=>hist(true);
+$('#hx').onclick=async()=>{try{const j=await api('GET',`jobs?q=${encodeURIComponent($('#hq').value.trim())}&limit=5000`),q=v=>`"${String(v).replace(/"/g,'""')}"`;
+ const t='\ufeff'+['When,User,Bank,Pay to,Check date,Amount,Currency',...j.jobs.map(r=>[when(r.at),r.user,r.bank,r.payee,r.check_date,r.amount,r.currency].map(q).join(','))].join('\r\n');
+ download(new Blob([t],{type:'text/csv;charset=utf-8'}),'print-history.csv')}catch(e){toast(e.message)}};
+$('#bk').onclick=async()=>{try{const r=await fetch('/api/backup');if(!r.ok)throw new Error((await r.json()).error);download(await r.blob(),'checkprint-backup.zip')}catch(e){toast(e.message)}};
+$('#cosave').onclick=async()=>{try{brand((await api('PUT','company',{name:$('#co').value})).name);toast('Company name saved.')}catch(e){toast(e.message)}};
+$('#unew').onclick=()=>pickUser(null);
+$('#usave').onclick=async()=>{const rights={};$$('#ur input').forEach(c=>{(rights[c.dataset.k]??=[0,0,0])[c.dataset.i]=c.checked?1:0});
+ try{const r=await api('POST','users',{id:UC.id,name:$('#un').value,password:$('#up').value,rights});UC={id:r.id};
+  if(r.id==ME.id){ME=await api('GET','me');applyRights()}await users();toast('User saved.')}catch(e){toast(e.message)}};
+$('#udel').onclick=async()=>{if(!confirm(T('Delete “{0}”?',UC.name)))return;try{await api('DELETE','users/'+UC.id);UC={id:0};await users();toast('User deleted.')}catch(e){toast(e.message)}};
+$('#out').onclick=async()=>{try{await api('POST','logout')}catch(e){}location.reload()};
+function applyRights(){$('#me').textContent=ME.name;$('#av').textContent=ME.name[0].toUpperCase();$$('#tabs button').forEach(b=>b.hidden=!CAN(b.dataset.t=='history'?'print':b.dataset.t,0));
+ $$('#tabs .grp').forEach(g=>{let n=g.nextElementSibling,v=0;while(n&&n.tagName=='BUTTON'){if(!n.hidden)v=1;n=n.nextElementSibling}g.hidden=!v});
+ const cur=$('#tabs button.on');
+ if(cur&&!cur.hidden)return cur.click();
+ const f=$$('#tabs button').find(b=>!b.hidden);f?f.click():toast('This account has no access. Ask an administrator.')}
+/* ---------- License ---------- */
+let LI={state:'dev'};
+const LREASON={invalid:'The license key is not valid.',machine:'This license was issued for a different computer.',expired:'This license has expired.',trial_over:'The free trial has ended. Enter a license key to continue printing.',clock:'The computer clock was set back. Fix the date and restart.',tenant:'This license was issued for a different company.'};
+async function lic(){try{LI=await api('GET','license')}catch(e){return}
+ const b=$('#lic'),L=LI,bad=L.state=='locked';let m='';
+ if(L.state=='trial')m=T('Free trial: {0} day(s) left.',L.days_left);
+ else if(bad)m=T('Printing is locked.')+' '+T(LREASON[L.reason]||LREASON.invalid);
+ else if(L.state=='licensed'&&L.days_left!=null&&L.days_left<=30)m=T('License expires in {0} day(s).',L.days_left);
+ b.className='banner'+(bad?' bad':'');b.hidden=!m;
+ const a=h('a',{},T('Activate a license'));a.onclick=()=>$('#tabs [data-t=users]').click();
+ b.replaceChildren(m+' ',...(m&&CAN('users',1)?[a]:[]));
+ $('#go').disabled=bad;licPanel()}
+function licPanel(){const L=LI,st={dev:'Development (licensing off)',licensed:'Licensed',trial:'Free trial',locked:'Locked'}[L.state];
+ const row=(k,v)=>h('tr',{},h('td',{},T(k)),h('td',{dir:'auto'},v));
+ $('#li').replaceChildren(row('Status',T(st)+(L.state=='locked'?' — '+T(LREASON[L.reason]||LREASON.invalid):'')),row('Licensed to',L.customer||'—'),
+  row('Valid until',L.expires||(L.state=='trial'?T('Free trial: {0} day(s) left.',L.days_left):T('No expiry'))),
+  row('Users allowed',L.max_users?`${L.users} / ${L.max_users}`:T('Unlimited')),...(MULTI?[]:[row('This computer’s ID',L.machine)]));
+ $('#lk').disabled=$('#lkgo').disabled=!CAN('users',1)}
+$('#lkgo').onclick=async()=>{try{LI=await api('POST','license',{key:$('#lk').value});$('#lk').value='';await lic();toast('License activated.')}catch(e){toast(e.message)}};
+fillBanks();people();applyRights();lic();
+</script></body></html>

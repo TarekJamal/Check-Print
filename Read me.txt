@@ -1,0 +1,91 @@
+To run it, put server.py and index.html in the same folder, 
+run python server.py, and open http://127.0.0.1:8080. 
+It needs Python 3.8 or newer and nothing else. 
+The first run prints a random password for the admin user, and you change it in the Users tab. Add --host 0.0.0.0 if other PCs on your network should connect.  First run: sign in as  admin  with password  lWBdopu4n3f2  (change it in the Users tab)
+
+I’ll sign license keys with Ed25519, so you keep a private key and each customer only holds a key file that can’t be forged without it.
+
+- Each company has its own users and rights, banks, people, print history, check pictures, branding, trial period and license. They sign in with a company code plus user name and password. Two companies can use the same user names (both can have an admin) and even the same bank IDs without clashing.
+
+Your console at /admin
+First run: the server prints the platform admin password once.
+- Companies: the console lets you create a company, which hands you its code, user and a generated one-time password to give the customer. It also lets you suspend or reactivate a company, set or remove its license, reset its admin password, and delete it (you type the company code to confirm).
+- Overview: the list shows each company’s users, checks printed, last print and license state.
+- Backup: a full backup of all companies is one click.
+- Run http://127.0.0.1:8080/admin	for tenants administration 
+- When creating new tenant you create one user with a default password
+
+Licensing, now per company
+- Turning on licensing creates your private signing key (vendor.key) on this server and gives every company without a license a fresh 14-day trial. Back up 'vendor.key' afterwards. 
+- Trial: every new company starts its own 14-day trial.
+- Company-locked keys: issue a key with --tenant nile 
+
+
+* Protection
+- Your private key never leaves your computer, and each customer gets only a small license.key file. 
+- A customer can check a key but can’t create one, because creating one needs your private key.
+
+- You, once: run python 'make_license.py' init. It creates 'vendor.key' and writes your public key into 'licensing.py'. 
+- Back up 'vendor.key' and never ship it. If you lose it, you can’t issue keys for copies you’ve already sold.
+
+- For each customer:
+- python make_license.py issue --customer "Nile Traders" --expires 2027-12-31 --users 5 (--machine <ID> optional)
+- You can also add --machine <ID> to lock the key to one computer. The customer’s computer ID appears in Users and rights, under License.
+
+Making a license for a customer
+- You can now create a customer license from the admin page at /admin. 
+- Turn licensing on, once: a banner at the top of the console offers Turn on licensing. It creates your private key (vendor.key) on the server. 
+- Companies without a license get a fresh 14-day trial, so nobody is locked out by switching it on. Back up 'vendor.key' afterwards, because without it you can’t issue licenses again.
+- Create the company: use New company. It gives you the company code and a one-time password to hand over.
+- Issue the license: click Edit on the company, set the fields below, and press Issue license. It applies at once and shows the key, and the company sees it on their next page load.
+
+Date limit and user limit (Both are optional.)
+- Date limit: pick a Valid until date, or use the +1 month, +1 year and No expiry buttons. The month and year buttons extend from the current expiry, so renewing is one click. Before the date, the license works. After it, printing is blocked.
+- User limit: type a Maximum users number, or leave it empty for unlimited. It counts the user accounts a company creates, not simultaneous logins.
+- Expiring soon: the company list shows each company’s expiry and user count, with a ⚠ when a license ends within 30 days.
+- Record: each company keeps a history of the licenses you issued.
+-- Customer-run copies: if a customer runs their own copy, you can paste their server’s ID so the key only works on that machine. It is created but not applied to your server.
+
+
+
+What the customer sees:
+Trial: 14 free days, with a banner showing the days left.
+الفترة التجريبية: 14 يوماً مجانياً، مع ظهور شريط يعرض عدد الأيام المتبقية.
+After the trial, or with an expired or invalid key: printing is blocked, with a red banner. Everything else still opens, so they can activate a key.
+بعد انتهاء الفترة التجريبية، أو عند استخدام مفتاح منتهي الصلاحية أو غير صالح: يتم حظر ميزة الطباعة ويظهر شريط أحمر تنبيهي. تظل بقية الوظائف متاحة للفتح، مما يتيح للعميل تفعيل مفتاح جديد.
+Activation: the customer pastes the key under Users and rights, then License. It takes effect immediately.
+التفعيل: يقوم العميل بلصق المفتاح في قسم "المستخدمون والصلاحيات" ثم "الترخيص". يسري مفعول المفتاح فوراً.
+User limit: the key’s user limit is enforced when someone adds a user.
+حد المستخدمين: يتم تطبيق الحد الأقصى لعدد المستخدمين المحدد في المفتاح عند محاولة إضافة مستخدم جديد.
+Clock rollback: setting the computer clock back to stretch the trial locks printing.
+تغيير وقت النظام (للخلف): يؤدي ضبط ساعة الكمبيوتر إلى وقت سابق لتمديد الفترة التجريبية إلى حظر ميزة الطباعة.
+
+Until you run init, licensing is off, so you can use and demo the app freely.
+تظل ميزة الترخيص معطلة حتى تقوم بتشغيل الأمر `init`؛ مما يتيح لك استخدام التطبيق وعرضه (كعرض توضيحي) بحرية.
+Ship licensing.py to customers only after init.
+لا تقم بتسليم ملف `licensing.py` للعملاء إلا بعد تشغيل الأمر `init`.
+
+
+
+
+
+
+Which printers
+
+Any printer your computer has a driver for: laser, inkjet, or a dot-matrix printer on continuous paper. The app prints through the browser’s print dialog, so “Save as PDF” also works. Use Chrome or Edge, which follow the check’s page size best. Firefox and Safari may need you to choose the paper size by hand.
+
+What to set when printing
+Dialog settings: set Margins to None and Scale to 100% (“Actual size”, not “Fit to page”), and turn off Headers and footers.
+Page size: the app sets the page to your check’s size automatically (17.5 × 7.5 cm came out exact).
+Printer’s unprintable margin: every printer leaves about 3–6 mm at the edges, which shifts or clips text. Fix it with Shift right / Shift down in the Check designer.
+Calibrate once per printer and bank: print on plain paper, lay it over a real check against a window, measure the error, and enter it as the shift. I measured a 0.5 cm and 0.3 cm shift moving the text by exactly those amounts.
+Feed direction: the “Feed check sideways” option turns the output 90°, as in your original program.
+Fonts: Arabic needs a font that has Arabic letters. Times New Roman, Arial and Tahoma on Windows all do.
+Stock: it prints only the data, never the check image, so use real pre-printed check stock.
+Scanning a check for the layout
+
+The scan is only a guide on screen. Printed positions depend only on the check’s width and height in cm and the shifts, never on the scan.
+
+- Scan flat at 300 dpi, crop exactly to the check’s edges, and save as JPG.
+- Measure the real check with a ruler and enter its width and height in cm. Don’t trust the picture’s size.
+- Set the width first, then upload the image. The height is calculated from the picture’s proportions, so compare it with your ruler and correct it if it’s off.
