@@ -916,4 +916,5 @@ if __name__ == "__main__":
         print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
     
     print(f"Check Printing running at http://{a.host}:{a.port}  (Ctrl+C to stop)")
-    ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
+    
+    ThreadingHTTPServer((a.host, a.port), Handler).serve_forever() 
