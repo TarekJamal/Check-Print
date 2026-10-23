@@ -12,12 +12,7 @@ never read or change another's data.
 
 Data lives in checks.db and the images/ folder next to this file.
 """
-# --- تعديل Turso عشان يشتغل Local وعلى Render ---
-try:
-    import libsql_experimental as libsql
-except ImportError:
-    libsql = None
-# ------------------------------------------------
+import libsql
 import argparse, hashlib, hmac, io, json, os, re, secrets, shutil, sqlite3, tempfile, time, zipfile
 from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
