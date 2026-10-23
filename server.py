@@ -84,9 +84,9 @@ class CursorWrapper:
         return [Row(cols, r) for r in rows]
 
     def __iter__(self):
-        cols = [col[0] for col in self._c.description] if self._c.description else []
-        for row in self._c:
-            yield Row(cols, row)
+        # CRITICAL: never do "for row in self._c"
+        # libsql cursors are NOT iterable.
+        return iter(self.fetchall())
 
     def __getattr__(self, name):
         return getattr(self._c, name)
