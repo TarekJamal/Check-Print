@@ -12,7 +12,6 @@ never read or change another's data.
 
 Data lives in checks.db and the images/ folder next to this file.
 """
-import libsql
 import argparse, hashlib, hmac, io, json, os, re, secrets, shutil, sqlite3, tempfile, time, zipfile
 from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -41,6 +40,57 @@ REASONS = {"invalid": "The license key is not valid.",
            "expired": "This license has expired.",
            "trial_over": "The free trial has ended. Enter a license key to continue printing.",
            "clock": "The computer clock was set back. Fix the date and restart."}
+
+
+# ------------------------------------------------------------------ libsql / Turso compatibility
+class Row(dict):
+    """Dict that also supports integer indexing like sqlite3.Row."""
+    def __init__(self, columns, values):
+        super().__init__(zip(columns, values))
+        self._values = tuple(values)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._values[key]
+        return super().__getitem__(key)
+
+
+class CursorWrapper:
+    """Wraps a libsql cursor so that fetch* / iteration return Row objects."""
+    def __init__(self, cursor):
+        self._c = cursor
+
+    def _make(self, row):
+        if row is None:
+            return None
+        cols = [col[0] for col in self._c.description]
+        return Row(cols, row)
+
+    def fetchone(self):
+        return self._make(self._c.fetchone())
+
+    def fetchall(self):
+        rows = self._c.fetchall()
+        if not rows:
+            return rows
+        cols = [col[0] for col in self._c.description]
+        return [Row(cols, r) for r in rows]
+
+    def fetchmany(self, size=None):
+        rows = self._c.fetchmany(size) if size is not None else self._c.fetchmany()
+        if not rows:
+            return rows
+        cols = [col[0] for col in self._c.description]
+        return [Row(cols, r) for r in rows]
+
+    def __iter__(self):
+        # description may be None for non-SELECT statements
+        cols = [col[0] for col in self._c.description] if self._c.description else []
+        for row in self._c:
+            yield Row(cols, row)
+
+    def __getattr__(self, name):
+        return getattr(self._c, name)
 
 
 def schema(sfx=""):
@@ -81,31 +131,32 @@ class ApiError(Exception):
         self.code, self.msg = code, msg
 
 
-#def db():
-#    c = sqlite3.connect(DB_PATH)
-#    c.row_factory = sqlite3.Row
-#    c.execute("PRAGMA foreign_keys=ON")
-#    return c
-
 def db():
     turso_url = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
-    
+
     if turso_url and turso_token:
         import libsql
         # تأكد إن الرابط بيبدأ بـ libsql://
         if turso_url.startswith("wss://"):
             turso_url = turso_url.replace("wss://", "libsql://")
-            
+
         c = libsql.connect(database=turso_url, auth_token=turso_token)
-        c.row_factory = sqlite3.Row  # دي هتشتغل مع libsql-experimental
+
+        # libsql does not implement row_factory – wrap execute so every
+        # fetchone / fetchall / iteration returns Row objects (dict + index).
+        _orig_execute = c.execute
+        def _execute(sql, parameters=()):
+            return CursorWrapper(_orig_execute(sql, parameters))
+        c.execute = _execute
         return c
     else:
         c = sqlite3.connect(DB_PATH)
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA foreign_keys=ON")
         return c
-        
+
+
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
 
@@ -489,20 +540,15 @@ def migrate_v1(c):
     print("  Migrated the existing single-company data into company code  default")
 
 
-
 def init_db():
-#    c = sqlite3.connect(DB_PATH)
     c = db()
-#    c.row_factory = sqlite3.Row
     old = c.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone()
-#    if old and c.execute("PRAGMA user_version").fetchone()[0] < 2:
     # بدل PRAGMA user_version، بنقرأ من جدول الإصدارات
     try:
         version = c.execute("SELECT version FROM _schema_version").fetchone()[0]
     except Exception:
         version = 0
     if old and version < 2:
-    
         migrate_v1(c)
         c.close()
         c = db()
@@ -510,12 +556,11 @@ def init_db():
         c.close()
         c = db()
         c.executescript(TENANTS + schema())
-       # c.execute("PRAGMA user_version=2")
         # إنشاء جدول الإصدارات لو مش موجود، وتحديثه
         c.execute("CREATE TABLE IF NOT EXISTS _schema_version (version INTEGER NOT NULL)")
         c.execute("DELETE FROM _schema_version")
         c.execute("INSERT INTO _schema_version (version) VALUES (2)")
-    
+
     c.execute("CREATE INDEX IF NOT EXISTS jobs_payee ON jobs(tenant_id, payee)")
     c.commit()
     if not c.execute("SELECT 1 FROM admins").fetchone():
@@ -530,7 +575,7 @@ def init_db():
         print(f"  First company:  code  default   user  {user}   password  {pw}\n  (change passwords after signing in)\n")
     c.close()
 
-    
+
 # ------------------------------------------------------------------ HTTP
 class Handler(BaseHTTPRequestHandler):
     server_version = "CheckPrinting"
@@ -935,12 +980,11 @@ class Handler(BaseHTTPRequestHandler):
     do_PUT = lambda self: self.dispatch("PUT")
     do_DELETE = lambda self: self.dispatch("DELETE")
 
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-   # ap.add_argument("--host", default="127.0.0.1")
     # خلي الـ Default بتاع الـ Host يبقى 0.0.0.0 عشان يشتغل على السيرفرات
-    ap.add_argument("--host", default="0.0.0.0") 
-    #ap.add_argument("--port", type=int, default=8080)
+    ap.add_argument("--host", default="0.0.0.0")
     # خلي الـ Default بتاع البورت يقرأ من متغير البيئة PORT بتاع Render، ولو مش موجود يستخدم 8080
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
 
