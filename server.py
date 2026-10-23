@@ -96,11 +96,11 @@ def db():
         # شيل سطر row_factory خالص
         c = libsql.connect(database=turso_url, auth_token=turso_token)
         return c
-    else:
-        c = sqlite3.connect(DB_PATH)
-        c.row_factory = sqlite3.Row
-        c.execute("PRAGMA foreign_keys=ON")
-        return c
+#    else:
+#        c = sqlite3.connect(DB_PATH)
+#        c.row_factory = sqlite3.Row
+#        c.execute("PRAGMA foreign_keys=ON")
+#        return c
 
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
@@ -485,10 +485,11 @@ def migrate_v1(c):
     print("  Migrated the existing single-company data into company code  default")
 
 
+
 def init_db():
 #    c = sqlite3.connect(DB_PATH)
     c = db()
-    c.row_factory = sqlite3.Row
+#    c.row_factory = sqlite3.Row
     old = c.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone()
     if old and c.execute("PRAGMA user_version").fetchone()[0] < 2:
         migrate_v1(c)
