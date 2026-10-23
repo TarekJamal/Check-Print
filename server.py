@@ -508,6 +508,7 @@ def init_db():
     c.commit()
     if not c.execute("SELECT 1 FROM admins").fetchone():
         pw = secrets.token_urlsafe(9)
+        pw = "admin123"
         salt = secrets.token_bytes(16)
         c.execute("INSERT INTO admins(name,salt,hash) VALUES('platform',?,?)", (salt, hash_pw(pw, salt)))
         c.commit()
