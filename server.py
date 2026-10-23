@@ -491,7 +491,14 @@ def init_db():
     c = db()
 #    c.row_factory = sqlite3.Row
     old = c.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone()
-    if old and c.execute("PRAGMA user_version").fetchone()[0] < 2:
+#    if old and c.execute("PRAGMA user_version").fetchone()[0] < 2:
+    # بدل PRAGMA user_version، بنقرأ من جدول الإصدارات
+    try:
+        version = c.execute("SELECT version FROM _schema_version").fetchone()[0]
+    except Exception:
+        version = 0
+    if old and version < 2:
+    
         migrate_v1(c)
         c.close()
         c = db()
@@ -499,7 +506,12 @@ def init_db():
         c.close()
         c = db()
         c.executescript(TENANTS + schema())
-        c.execute("PRAGMA user_version=2")
+       # c.execute("PRAGMA user_version=2")
+        # إنشاء جدول الإصدارات لو مش موجود، وتحديثه
+        c.execute("CREATE TABLE IF NOT EXISTS _schema_version (version INTEGER NOT NULL)")
+        c.execute("DELETE FROM _schema_version")
+        c.execute("INSERT INTO _schema_version (version) VALUES (2)")
+    
     c.execute("CREATE INDEX IF NOT EXISTS jobs_payee ON jobs(tenant_id, payee)")
     c.commit()
     if not c.execute("SELECT 1 FROM admins").fetchone():
