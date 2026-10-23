@@ -97,16 +97,21 @@ def db():
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     
     if turso_url and turso_token:
+        # تأكد إن الرابط بيبدأ بـ libsql:// أو https://
+        if turso_url.startswith("wss://"):
+            turso_url = turso_url.replace("wss://", "libsql://")
+        elif turso_url.startswith("ws://"):
+            turso_url = turso_url.replace("ws://", "http://")
+            
         try:
             import libsql_client
-            print("--- TESTING TURSO CONNECTION ---")
             client = libsql_client.create_client_sync(url=turso_url, auth_token=turso_token)
-            result = client.execute("SELECT name, code FROM tenants")
-            print("TURSO TENANTS:", [dict(row) for row in result.rows])
-            print("--- TURSO CONNECTION SUCCESS ---")
+            # مكتبة libsql-client مش بتدعم row_factory بنفس طريقة sqlite3
+            # عشان كده إحنا هنرجع الـ client وهنعدل باقي الكود بعدين
+            return client
         except Exception as e:
-            print("--- TURSO CONNECTION FAILED ---")
-            print("ERROR:", str(e))
+            print("FATAL ERROR CONNECTING TO TURSO:", e)
+            raise e  # وقف السيرفر عشان نشوف المشكلة
     else:
         # الاتصال المحلي (للتجربة على جهازك)
         c = sqlite3.connect(DB_PATH)
@@ -114,6 +119,7 @@ def db():
     c.row_factory = sqlite3.Row
     c.execute("PRAGMA foreign_keys=ON")
     return c
+
 
 
 def hash_pw(pw, salt):
