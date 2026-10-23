@@ -92,18 +92,15 @@ def db():
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     
     if turso_url and turso_token:
-        # المكتبة الجديدة بتقبل libsql:// مباشرة
+        import libsql
+        # شيل سطر row_factory خالص
         c = libsql.connect(database=turso_url, auth_token=turso_token)
-        c.row_factory = sqlite3.Row
-        c.execute("PRAGMA foreign_keys=ON")
         return c
     else:
         c = sqlite3.connect(DB_PATH)
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA foreign_keys=ON")
         return c
-
-
 
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
