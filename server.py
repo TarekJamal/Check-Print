@@ -935,6 +935,9 @@ if __name__ == "__main__":
 
     a = ap.parse_args()
     init_db()
+    # سطر اختبار عشان نتأكد إن Render شايف المتغيرات
+    print("TURSO URL EXISTS:", bool(os.environ.get("TURSO_DATABASE_URL")))
+    print("TURSO TOKEN EXISTS:", bool(os.environ.get("TURSO_AUTH_TOKEN")))    
     if licensing.PUBLIC_KEY and vendor_seed() is None:
         print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
     print(f"Check Printing running at http://{a.host}:{a.port}  (Ctrl+C to stop)")
