@@ -96,9 +96,17 @@ def db():
     turso_url = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     
-    # لو إحنا على Render ومكتبة Turso متسطبة
-    if turso_url and turso_token and libsql:
-        c = libsql.connect(database=turso_url, auth_token=turso_token)
+    if turso_url and turso_token:
+        try:
+            import libsql_client
+            print("--- TESTING TURSO CONNECTION ---")
+            client = libsql_client.create_client_sync(url=turso_url, auth_token=turso_token)
+            result = client.execute("SELECT name, code FROM tenants")
+            print("TURSO TENANTS:", [dict(row) for row in result.rows])
+            print("--- TURSO CONNECTION SUCCESS ---")
+        except Exception as e:
+            print("--- TURSO CONNECTION FAILED ---")
+            print("ERROR:", str(e))
     else:
         # الاتصال المحلي (للتجربة على جهازك)
         c = sqlite3.connect(DB_PATH)
@@ -106,6 +114,7 @@ def db():
     c.row_factory = sqlite3.Row
     c.execute("PRAGMA foreign_keys=ON")
     return c
+
 
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
