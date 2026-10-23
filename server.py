@@ -92,16 +92,20 @@ def db():
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     
     if turso_url and turso_token:
-        import libsql
-        # شيل سطر row_factory خالص
+        import libsql_experimental as libsql
+        # تأكد إن الرابط بيبدأ بـ libsql://
+        if turso_url.startswith("wss://"):
+            turso_url = turso_url.replace("wss://", "libsql://")
+            
         c = libsql.connect(database=turso_url, auth_token=turso_token)
+        c.row_factory = sqlite3.Row  # دي هتشتغل مع libsql-experimental
         return c
-#    else:
-#        c = sqlite3.connect(DB_PATH)
-#        c.row_factory = sqlite3.Row
-#        c.execute("PRAGMA foreign_keys=ON")
-#        return c
-
+    else:
+        c = sqlite3.connect(DB_PATH)
+        c.row_factory = sqlite3.Row
+        c.execute("PRAGMA foreign_keys=ON")
+        return c
+        
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
 
@@ -931,7 +935,6 @@ class Handler(BaseHTTPRequestHandler):
     do_PUT = lambda self: self.dispatch("PUT")
     do_DELETE = lambda self: self.dispatch("DELETE")
 
-
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
    # ap.add_argument("--host", default="127.0.0.1")
@@ -942,11 +945,14 @@ if __name__ == "__main__":
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
 
     a = ap.parse_args()
-    init_db()
-    # سطر اختبار عشان نتأكد إن Render شايف المتغيرات
-    print("TURSO URL EXISTS:", bool(os.environ.get("TURSO_DATABASE_URL")))
-    print("TURSO TOKEN EXISTS:", bool(os.environ.get("TURSO_AUTH_TOKEN")))    
-    if licensing.PUBLIC_KEY and vendor_seed() is None:
-        print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
+    # لو إحنا على Turso، متعملش init_db خالص عشان ميعملش create tables
+    is_turso = bool(os.environ.get("TURSO_DATABASE_URL"))
+    if not is_turso:
+        init_db()
+        if licensing.PUBLIC_KEY and vendor_seed() is None:
+            print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
+    else:
+        print("Connected to Turso. Skipping database initialization.")
+
     print(f"Check Printing running at http://{a.host}:{a.port}  (Ctrl+C to stop)")
     ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
