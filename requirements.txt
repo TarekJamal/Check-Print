@@ -1,1 +1,1 @@
-libsql-client
+libsql
