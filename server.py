@@ -42,7 +42,7 @@ REASONS = {"invalid": "The license key is not valid.",
            "clock": "The computer clock was set back. Fix the date and restart."}
 
 
-# ------------------------------------------------------------------ libsql / Turso compatibility
+# ------------------------------------------------------------------ libsql / Turso compatibility layer
 class Row(dict):
     """Dict that also supports integer indexing like sqlite3.Row."""
     def __init__(self, columns, values):
@@ -56,7 +56,7 @@ class Row(dict):
 
 
 class CursorWrapper:
-    """Wraps a libsql cursor so that fetch* / iteration return Row objects."""
+    """Makes libsql cursors return Row objects (dict + index access)."""
     def __init__(self, cursor):
         self._c = cursor
 
@@ -84,13 +84,54 @@ class CursorWrapper:
         return [Row(cols, r) for r in rows]
 
     def __iter__(self):
-        # description may be None for non-SELECT statements
         cols = [col[0] for col in self._c.description] if self._c.description else []
         for row in self._c:
             yield Row(cols, row)
 
     def __getattr__(self, name):
         return getattr(self._c, name)
+
+
+class LibsqlConnection:
+    """
+    Thin proxy around a libsql Connection.
+    - execute() returns a CursorWrapper so rows are dict-like
+    - all other methods / attributes are forwarded
+    """
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, parameters=()):
+        return CursorWrapper(self._conn.execute(sql, parameters))
+
+    def executemany(self, sql, parameters):
+        return self._conn.executemany(sql, parameters)
+
+    def executescript(self, script):
+        return self._conn.executescript(script)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def close(self):
+        return self._conn.close()
+
+    def __enter__(self):
+        # libsql connections usually support the context manager protocol
+        if hasattr(self._conn, "__enter__"):
+            self._conn.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if hasattr(self._conn, "__exit__"):
+            return self._conn.__exit__(exc_type, exc_val, exc_tb)
+        # fallback: commit on success, do nothing special on error
+        if exc_type is None:
+            self.commit()
+        return False
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
 
 
 def schema(sfx=""):
@@ -141,15 +182,8 @@ def db():
         if turso_url.startswith("wss://"):
             turso_url = turso_url.replace("wss://", "libsql://")
 
-        c = libsql.connect(database=turso_url, auth_token=turso_token)
-
-        # libsql does not implement row_factory – wrap execute so every
-        # fetchone / fetchall / iteration returns Row objects (dict + index).
-        _orig_execute = c.execute
-        def _execute(sql, parameters=()):
-            return CursorWrapper(_orig_execute(sql, parameters))
-        c.execute = _execute
-        return c
+        real = libsql.connect(database=turso_url, auth_token=turso_token)
+        return LibsqlConnection(real)          # ← proxy, never touch real.execute
     else:
         c = sqlite3.connect(DB_PATH)
         c.row_factory = sqlite3.Row
