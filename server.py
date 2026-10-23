@@ -92,7 +92,7 @@ def db():
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     
     if turso_url and turso_token:
-        import libsql_experimental as libsql
+        import libsql
         # تأكد إن الرابط بيبدأ بـ libsql://
         if turso_url.startswith("wss://"):
             turso_url = turso_url.replace("wss://", "libsql://")
