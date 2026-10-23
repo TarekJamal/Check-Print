@@ -12,6 +12,12 @@ never read or change another's data.
 
 Data lives in checks.db and the images/ folder next to this file.
 """
+# --- تعديل Turso عشان يشتغل Local وعلى Render ---
+try:
+    import libsql_experimental as libsql
+except ImportError:
+    libsql = None
+# ------------------------------------------------
 import argparse, hashlib, hmac, io, json, os, re, secrets, shutil, sqlite3, tempfile, time, zipfile
 from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -80,12 +86,26 @@ class ApiError(Exception):
         self.code, self.msg = code, msg
 
 
+#def db():
+#    c = sqlite3.connect(DB_PATH)
+#    c.row_factory = sqlite3.Row
+#    c.execute("PRAGMA foreign_keys=ON")
+#    return c
+
 def db():
-    c = sqlite3.connect(DB_PATH)
+    turso_url = os.environ.get("TURSO_DATABASE_URL")
+    turso_token = os.environ.get("TURSO_AUTH_TOKEN")
+    
+    # لو إحنا على Render ومكتبة Turso متسطبة
+    if turso_url and turso_token and libsql:
+        c = libsql.connect(database=turso_url, auth_token=turso_token)
+    else:
+        # الاتصال المحلي (للتجربة على جهازك)
+        c = sqlite3.connect(DB_PATH)
+        
     c.row_factory = sqlite3.Row
     c.execute("PRAGMA foreign_keys=ON")
     return c
-
 
 def hash_pw(pw, salt):
     return hashlib.scrypt(pw.encode(), salt=salt, n=2 ** 14, r=8, p=1, dklen=32)
@@ -471,7 +491,8 @@ def migrate_v1(c):
 
 
 def init_db():
-    c = sqlite3.connect(DB_PATH)
+#    c = sqlite3.connect(DB_PATH)
+    c = db()
     c.row_factory = sqlite3.Row
     old = c.execute("SELECT 1 FROM sqlite_master WHERE name='users'").fetchone()
     if old and c.execute("PRAGMA user_version").fetchone()[0] < 2:
@@ -496,7 +517,7 @@ def init_db():
         print(f"  First company:  code  default   user  {user}   password  {pw}\n  (change passwords after signing in)\n")
     c.close()
 
-
+    
 # ------------------------------------------------------------------ HTTP
 class Handler(BaseHTTPRequestHandler):
     server_version = "CheckPrinting"
@@ -904,17 +925,16 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
+   # ap.add_argument("--host", default="127.0.0.1")
     # خلي الـ Default بتاع الـ Host يبقى 0.0.0.0 عشان يشتغل على السيرفرات
     ap.add_argument("--host", default="0.0.0.0") 
-    
+    #ap.add_argument("--port", type=int, default=8080)
     # خلي الـ Default بتاع البورت يقرأ من متغير البيئة PORT بتاع Render، ولو مش موجود يستخدم 8080
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)))
-    
+
     a = ap.parse_args()
     init_db()
     if licensing.PUBLIC_KEY and vendor_seed() is None:
         print("  Note: licensing is on but vendor.key is missing here, so the console cannot issue licenses.")
-    
     print(f"Check Printing running at http://{a.host}:{a.port}  (Ctrl+C to stop)")
-    
-    ThreadingHTTPServer((a.host, a.port), Handler).serve_forever() 
+    ThreadingHTTPServer((a.host, a.port), Handler).serve_forever()
