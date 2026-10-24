@@ -42,7 +42,7 @@ REASONS = {"invalid": "The license key is not valid.",
            "clock": "The computer clock was set back. Fix the date and restart."}
 
 
-# ------------------------------------------------------------------ libsql / Turso compatibility layer
+# -------------------------------------------------------------------- libsql / Turso compatibility layer
 class Row(dict):
     """Dict that also supports integer indexing like sqlite3.Row."""
     def __init__(self, columns, values):
